@@ -18,7 +18,7 @@ class CaixaResource extends Resource
 {
     protected static ?string $model = Caixa::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCurrencyDollar;
 
     protected static ?string $recordTitleAttribute = 'data_abertura';
 

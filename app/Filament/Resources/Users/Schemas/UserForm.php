@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -14,6 +15,7 @@ class UserForm
         return $schema
             ->components([
                 Section::make([
+                    FileUpload::make('avatar'),
                     Select::make('role_id')
                         ->relationship('role', 'name')
                         ->required()
@@ -26,7 +28,6 @@ class UserForm
                         ->required(),
                     TextInput::make('password')
                         ->password(),
-                    TextInput::make('avatar'),
                 ])
             ])->columns(1);
     }

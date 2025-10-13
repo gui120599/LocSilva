@@ -18,7 +18,9 @@ class AluguelResource extends Resource
 {
     protected static ?string $model = Aluguel::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+
+    protected static ?string $pluralModelLabel = 'Alugueis';
 
     protected static ?string $recordTitleAttribute = 'data_retirada';
 
