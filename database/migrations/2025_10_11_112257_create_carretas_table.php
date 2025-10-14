@@ -13,6 +13,8 @@ return new class extends Migration {
         Schema::create('carretas', function (Blueprint $table) {
             $table->id();
             $table->string('identificacao')->unique();
+            $table->string('foto')->nullable();
+            $table->string('documento')->nullable();
             $table->enum('tipo', ['carreta', 'reboque']);
             $table->string('marca')->nullable();
             $table->string('modelo')->nullable();
@@ -20,9 +22,9 @@ return new class extends Migration {
             $table->string('placa')->nullable();
             $table->decimal('capacidade_carga', 8, 2)->nullable();
             $table->decimal('valor_diaria', 8, 2);
-            $table->enum('status', ['disponivel', 'alugada', 'manutencao'])->default('disponivel');
+            $table->enum('status', ['disponivel', 'alugada', 'manutencao','baixada'])->default('disponivel');
             $table->text('observacoes')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
         });

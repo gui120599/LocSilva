@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Caixa extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'user_id',
         'data_abertura',
