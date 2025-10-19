@@ -20,7 +20,7 @@ class UsersTable
     {
         return $table
             ->columns([
-                ImageColumn::make('avatar')
+                ImageColumn::make('avatar_url')
                     ->searchable(),
                 TextColumn::make('name')
                     ->sortable()

@@ -15,7 +15,9 @@ class UserForm
         return $schema
             ->components([
                 Section::make([
-                    FileUpload::make('avatar'),
+                    FileUpload::make('avatar_url')
+                        ->label('Avatar')
+                        ->avatar(),
                     Select::make('role_id')
                         ->relationship('role', 'name')
                         ->required()
