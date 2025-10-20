@@ -22,7 +22,8 @@ class ClientesTable
     {
         return $table
             ->columns([
-                ImageColumn::make('foto'),
+                ImageColumn::make('foto')
+                ->rounded(),
                 TextColumn::make('nome')
                     ->sortable()
                     ->searchable(),
@@ -70,7 +71,7 @@ class ClientesTable
             ])
             ->deferColumnManager(false)
             ->recordActions([
-                EditAction::make(),
+                //EditAction::make(),
                 RestoreAction::make(),
                 DeleteAction::make(),
             ])

@@ -7,6 +7,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
@@ -18,29 +19,6 @@ class CarretaForm
         return $schema
             ->columns(1)
             ->components([
-                Section::make()
-                    ->description('Arquivos')
-                    ->icon('heroicon-s-document')
-                    ->columns(2)
-                    ->schema([
-                        FileUpload::make('foto')
-                        ->columnSpan(1)
-                            ->disk('public')
-                            ->directory('fotos_carretas'),
-                        FileUpload::make('documento')
-                        ->columnSpan(1)
-                            ->hintActions([
-                                Action::make('print')
-                                    ->icon('heroicon-o-printer')
-                                    ->color('primary')
-                                    ->url(fn($record) => route('documento.print', $record->id), )
-                                    ->openUrlInNewTab()
-                                    ->hidden('create'),
-                            ])
-                            ->disk('public')
-                            ->directory('documentos_carretas')
-                            ->downloadable(),
-                    ]),
                 Section::make()
                     ->description('Dados da Carreta/Reboque')
                     ->icon('heroicon-s-truck')
@@ -88,30 +66,66 @@ class CarretaForm
                                         return number_format((float) $state, 2, ',', '.');
                                     })
                                     ->placeholder('0,00'),
-                                Select::make('status')
+                                ToggleButtons::make('status')
                                     ->options(['disponivel' => 'Disponivel', 'alugada' => 'Alugada', 'manutencao' => 'Manutencao'])
+                                    ->icons(['disponivel' => 'heroicon-o-check-circle', 'alugada' => 'heroicon-o-truck', 'manutencao' => 'heroicon-o-wrench-screwdriver'])
+                                    ->colors(['disponivel' => 'success', 'alugada' => 'info', 'manutencao' => 'warning'])
                                     ->default('disponivel')
+                                    ->grouped()
                                     ->required(),
-                                Textarea::make('observacoes')
-                                    ->columnSpanFull(),
-                            ]),
 
+                            ]),
+                        Section::make()
+                            ->columnSpan(2)
+                            ->schema([
+                                FileUpload::make('foto')
+                                    ->disk('public')
+                                    ->directory('fotos_carretas')
+                                    ->image()
+                                    ->maxSize(2048)
+                                    ->hint('Tamanho máximo: 2MB'),
+                            ]),
+                    ]),
+                Section::make()
+                    ->description('Arquivos')
+                    ->icon('heroicon-s-document')
+                    ->schema([
+                        FileUpload::make('documento')
+                            ->hintActions([
+                                Action::make('print')
+                                    ->icon('heroicon-o-printer')
+                                    ->color('primary')
+                                    ->url(fn($record) => route('documento.print', $record->id), )
+                                    ->visible(fn($record) => $record && $record->documento)
+                                    ->openUrlInNewTab(),
+                            ])
+                            ->disk('public')
+                            ->directory('documentos_carretas')
+                            ->downloadable(),
                     ]),
                 Section::make()
                     ->description('Caracteristicas')
-                    ->icon('heroicon-s-swacht')
+                    ->icon('heroicon-s-swatch')
+                    ->columns(5)
                     ->schema([
                         TextInput::make('marca')
                             ->columnSpan(2),
                         TextInput::make('modelo')
                             ->columnSpan(2),
                         TextInput::make('ano')
-                            ->numeric(),
+                            ->columnSpan(1),
                         TextInput::make('capacidade_carga')
                             ->label('Capacidade de Carga (kg)')
-                            ->columnSpan(2)
-                            ->prefix('KG')
-                            ->numeric(),
+                            ->columnSpan(5)
+                            ->prefix('KG'),
+                    ]),
+                Section::make()
+                    ->description('Observações')
+                    ->icon('heroicon-s-chat-bubble-bottom-center-text')
+                    ->columns(5)
+                    ->schema([
+                        Textarea::make('observacoes')
+                            ->columnSpanFull(),
                     ])
             ]);
     }
