@@ -18,10 +18,12 @@ class ClienteForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->components([
                 Section::make()
                     ->description('Dados do cliente')
                     ->icon('heroicon-s-user-circle')
+                    ->columns(4)
                     ->schema([
                         Section::make()
                             ->columnSpan(3)
@@ -58,8 +60,7 @@ class ClienteForm
                                         },
                                     ])
                                     ->columnSpan(2),
-                                DatePicker::make('data_nascimento')
-                                ->format('dd/mm/yyyy'),
+                                DatePicker::make('data_nascimento'),
                             ])
                             ->columns(3),
                         Section::make()
@@ -67,11 +68,11 @@ class ClienteForm
                             ->schema([
                                 FileUpload::make('foto')
                             ]),
-                    ])
-                    ->columns(4),
+                    ]),
                 Section::make()
                     ->description('Contato do cliente')
                     ->icon('heroicon-s-phone')
+                    ->columns(2)
                     ->schema([
                         TextInput::make('telefone')
                             ->dehydrateStateUsing(fn(string $state) => preg_replace("/\D/", "", $state))
@@ -80,11 +81,11 @@ class ClienteForm
                             ->required(),
                         TextInput::make('email')
                             ->email(),
-                    ])
-                    ->columns(2),
+                    ]),
                 Section::make()
                     ->description('Endereço do cliente')
                     ->icon('heroicon-s-map-pin')
+                    ->columns(6)
                     ->schema([
                         TextInput::make('cep')
                             ->mask('99999-999')
@@ -138,14 +139,14 @@ class ClienteForm
                                 return IBGEServices::cidadesPorUf($uf);
                             })
                             ->columnSpan(3),
-                    ])
-                    ->columns(6),
+                    ]),
                 Section::make()
                     ->description('Observações do cliente')
                     ->icon('heroicon-s-chat-bubble-bottom-center-text')
+                    ->columns(1)
                     ->schema([
                         Textarea::make('observacoes'),
                     ])
-            ])->columns(1);
+            ]);
     }
 }

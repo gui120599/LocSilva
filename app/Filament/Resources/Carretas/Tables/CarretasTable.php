@@ -5,6 +5,9 @@ namespace App\Filament\Resources\Carretas\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -14,25 +17,59 @@ class CarretasTable
     {
         return $table
             ->columns([
+                ImageColumn::make('foto')
+                    ->label('Imagem')
+                    ->disk('public')
+                    ->rounded(),
                 TextColumn::make('identificacao')
-                    ->searchable(),
-                TextColumn::make('tipo'),
+                    ->label('Identificação')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('tipo')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('marca')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('modelo')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('ano')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('placa')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('capacidade_carga')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('valor_diaria')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('status'),
+                    ->money('BRL', divideBy: 1)
+                    ->sortable()
+                    ->badge()
+                    ->color('success')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->toggleable(),
+                IconColumn::make('status')
+                    ->tooltip(fn(string $state): string => match ($state) {
+                        'disponivel' => 'DISPONÍVEL',
+                        'alugada' => 'ALUGADA',
+                        'manutencao' => 'EM MANUTENÇÃO',
+                        default => strtoupper($state),
+                    })
+                    ->icon(fn(string $state): Heroicon => match ($state) {
+                        'disponivel' => Heroicon::OutlinedCheckCircle,
+                        'alugada' => Heroicon::OutlinedTruck,
+                        'manutencao' => Heroicon::OutlinedWrenchScrewdriver
+                    })
+                    ->colors([
+                        'success' => 'disponivel',
+                        'info' => 'alugada',
+                        'warning' => 'manutencao',
+                    ]),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

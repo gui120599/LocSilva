@@ -12,6 +12,7 @@ class Carreta extends Model
     protected $fillable = [
         'identificacao',
         'foto',
+        'documento',
         'tipo',
         'marca',
         'modelo',
