@@ -38,4 +38,23 @@ class Carreta extends Model
     {
         return $this->status === 'disponivel';
     }
+
+    public static function getCleanOptionsString($carreta)
+    {
+        return view('filament.components.selectUserResults',[
+            'identificacao' => $carreta['identificacao'] ?? null,
+            'foto' => $carreta['foto'] ?? null,
+            'valor_diaria' => $carreta['valor_diaria'] ?? null,
+        ])->render();
+    }
+
+    public static function disponiveisParaSelect(): array
+    {
+        return static::where('status', 'disponivel')
+            ->get()
+            ->mapWithKeys(fn ($c) => [
+                $c->id => "{$c->identificacao} - {$c->valor_diaria}/{$c->placa}",
+            ])
+            ->toArray();
+    }
 }

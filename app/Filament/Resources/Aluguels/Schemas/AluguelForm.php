@@ -2,23 +2,38 @@
 
 namespace App\Filament\Resources\Aluguels\Schemas;
 
+use App\Filament\Tables\CarretasTable;
 use App\Models\Carreta;
-use App\Models\Cliente;
 use App\Services\IBGEServices;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\ModalTableSelect;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Schemas\Components\Image;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
+use Filament\Tables\Columns\ImageColumn;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rules\ImageFile;
 
 class AluguelForm
 {
+    public static function getCleanOptionString(Model $model): string
+    {
+        return new HtmlString(
+            view('filament.components.select-user-results')
+                ->with('name', $model?->identificacao)
+                ->with('email', $model?->valor_diaria)
+                ->with('image', $model?->foto)
+                ->render()
+        );
+    }
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -156,39 +171,25 @@ class AluguelForm
                     ])
                     ->searchable()
                     ->required(),
-                Select::make('carreta_id')
-                    ->label('Carreta')
-                    ->options(function () {
-                        return Carreta::where('status', 'disponivel')
-                            ->get()
-                            ->mapWithKeys(fn($c) => [
-                                $c->id => "
-                                    <div class='flex items-center gap-3'>
-                                        <img 
-                                            src='" . asset('storage/fotos_carretas/' . $c->foto) . "' 
-                                            alt='Carreta {$c->identificacao}' 
-                                            class='w-10 h-10 rounded-md object-cover border border-gray-300'
-                                        />
-                                        <div class='flex-1'>
-                                            <div class='font-semibold text-sm text-gray-800'>
-                                                🚛 {$c->identificacao}
-                                            </div>
-                                            <div class='text-xs text-gray-500'>
-                                                {$c->marca} {$c->modelo}
-                                            </div>
-                                        </div>
-                                        <div class='text-green-600 font-bold text-xs'>
-                                            R$ " . number_format($c->valor_diaria, 2, ',', '.') . "
-                                        </div>
-                                    </div>
-                                ",
-                            ]);
+                ModalTableSelect::make('carreta_id')
+                    ->relationship('carreta', 'identificacao')
+                    ->label('Carreta/Reboque')
+                    ->live()
+                    ->afterStateUpdated(function (Get $get, callable $set, $state) {
+                        $carreta = Carreta::find($state);
+                        if ($carreta) {
+                            $set('valor_diaria', $carreta->valor_diaria);
+                            $set('quantidade_diarias', 1);
+                            $set('valor_total', $carreta->valor_diaria);
+                            $set('valor_saldo', $carreta->valor_diaria);
+                            $set('carreta.foto', $carreta->foto);
+                        }
                     })
-                    ->allowHtml() // ✅ Permite renderizar HTML
-                    ->native(false) // ✅ Usa dropdown estilizado
-                    ->searchable()
-                    ->required(),
-
+                    ->tableConfiguration(CarretasTable::class),
+                ImageEntry::make('carreta.foto')
+                    ->label('Imagem da Carreta/Reboque')
+                    ->circular()
+                    ->disk('public'),
                 DatePicker::make('data_retirada')
                     ->required(),
                 DatePicker::make('data_devolucao_prevista')
@@ -198,8 +199,7 @@ class AluguelForm
                     ->required()
                     ->numeric(),
                 TextInput::make('quantidade_diarias')
-                    ->required()
-                    ->numeric(),
+                    ->required(),
                 TextInput::make('valor_total')
                     ->required()
                     ->numeric(),
