@@ -27,6 +27,23 @@ class CarretasTable
                     ->label('Identificação')
                     ->searchable()
                     ->sortable(),
+                IconColumn::make('status')
+                    ->tooltip(fn(string $state): string => match ($state) {
+                        'disponivel' => 'DISPONÍVEL',
+                        'alugada' => 'ALUGADA',
+                        'manutencao' => 'EM MANUTENÇÃO',
+                        default => strtoupper($state),
+                    })
+                    ->icon(fn(string $state): Heroicon => match ($state) {
+                        'disponivel' => Heroicon::OutlinedCheckCircle,
+                        'alugada' => Heroicon::OutlinedTruck,
+                        'manutencao' => Heroicon::OutlinedWrenchScrewdriver
+                    })
+                    ->colors([
+                        'success' => 'disponivel',
+                        'info' => 'alugada',
+                        'warning' => 'manutencao',
+                    ]),
                 TextColumn::make('tipo')
                     ->sortable()
                     ->searchable()
@@ -55,23 +72,7 @@ class CarretasTable
                     ->color('success')
                     ->icon('heroicon-o-currency-dollar')
                     ->toggleable(),
-                IconColumn::make('status')
-                    ->tooltip(fn(string $state): string => match ($state) {
-                        'disponivel' => 'DISPONÍVEL',
-                        'alugada' => 'ALUGADA',
-                        'manutencao' => 'EM MANUTENÇÃO',
-                        default => strtoupper($state),
-                    })
-                    ->icon(fn(string $state): Heroicon => match ($state) {
-                        'disponivel' => Heroicon::OutlinedCheckCircle,
-                        'alugada' => Heroicon::OutlinedTruck,
-                        'manutencao' => Heroicon::OutlinedWrenchScrewdriver
-                    })
-                    ->colors([
-                        'success' => 'disponivel',
-                        'info' => 'alugada',
-                        'warning' => 'manutencao',
-                    ]),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

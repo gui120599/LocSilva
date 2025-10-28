@@ -37,18 +37,56 @@ class Aluguel extends Model
         'valor_saldo' => 'decimal:2',
     ];
 
-    public function cliente(): BelongsTo
+// Relacionamentos
+    public function cliente()
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    public function carreta(): BelongsTo
+    public function carreta()
     {
         return $this->belongsTo(Carreta::class);
     }
 
-    public function caixa(): BelongsTo
+    public function caixa()
     {
         return $this->belongsTo(Caixa::class);
+    }
+
+    public function movimentos()
+    {
+        return $this->hasMany(MovimentoCaixa::class);
+    }
+
+    // Métodos úteis
+    public function finalizar(float $pagamentoAdicional = 0): void
+    {
+        $this->update([
+            'data_devolucao_real' => now(),
+            'status' => 'finalizado',
+            'valor_pago' => $this->valor_pago + $pagamentoAdicional,
+            'valor_saldo' => max(0, $this->valor_total - ($this->valor_pago + $pagamentoAdicional)),
+        ]);
+    }
+
+    public function cancelar(string $motivo = null): void
+    {
+        $observacoes = $this->observacoes ?? '';
+
+        if ($motivo) {
+            $observacoes .= "\n\nCancelado em " . now()->format('d/m/Y H:i') . ": {$motivo}";
+        }
+
+        $this->update([
+            'status' => 'cancelado',
+            'observacoes' => $observacoes,
+        ]);
+    }
+
+    public function adicionarPagamento(float $valor, string $descricao = null): void
+    {
+        $this->valor_pago += $valor;
+        $this->valor_saldo = max(0, $this->valor_total - $this->valor_pago);
+        $this->save();
     }
 }

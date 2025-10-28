@@ -195,7 +195,7 @@ class AluguelForm
                             Section::make()
                                 ->description('Selecione a Carreta/Reboque para o aluguel')
                                 ->icon('heroicon-s-document-text')
-                                ->columns(1)
+                                ->columns(2)
                                 ->columnSpan(1)
                                 ->schema([
                                     ModalTableSelect::make('carreta_id')
@@ -216,7 +216,6 @@ class AluguelForm
                                         ->tableConfiguration(CarretasTable::class),
                                     Section::make()
                                         ->description('Detalhes da Carreta/Reboque')
-                                        ->collapsed()
                                         ->schema([
                                             TextEntry::make('carreta.identificacao')
                                                 ->label('Nº de Identificação'),
@@ -271,6 +270,8 @@ class AluguelForm
                     Step::make('Valores')
                         ->columns(3)
                         ->schema([
+                            TextInput::make('quantidade_diarias')
+                                ->required(),
                             TextInput::make('valor_diaria')
                                 ->required()
                                 ->prefix('R$')
@@ -296,8 +297,6 @@ class AluguelForm
                                     return number_format((float) $state, 2, ',', '.');
                                 })
                                 ->placeholder('0,00'),
-                            TextInput::make('quantidade_diarias')
-                                ->required(),
                             TextInput::make('valor_total')
                                 ->required()
                                 ->prefix('R$')
@@ -324,6 +323,31 @@ class AluguelForm
                                 })
                                 ->placeholder('0,00'),
                             TextInput::make('valor_pago')
+                                ->required()
+                                ->prefix('R$')
+                                ->mask(RawJs::make(<<<'JS'
+                                            $money($input, ',', '.', 2)
+                                        JS))
+                                ->dehydrateStateUsing(function ($state) {
+                                    // Remove formatação antes de salvar
+                                    if (!$state)
+                                        return 0;
+
+                                    // Remove R$, pontos e converte vírgula em ponto
+                                    $value = str_replace(['R$', '.', ' '], '', $state);
+                                    $value = str_replace(',', '.', $value);
+
+                                    return (float) $value;
+                                })
+                                ->formatStateUsing(function ($state) {
+                                    // Formata para exibição
+                                    if (!$state)
+                                        return '0,00';
+
+                                    return number_format((float) $state, 2, ',', '.');
+                                })
+                                ->placeholder('0,00'),
+                            TextInput::make('valor_saldo')
                                 ->required()
                                 ->prefix('R$')
                                 ->mask(RawJs::make(<<<'JS'

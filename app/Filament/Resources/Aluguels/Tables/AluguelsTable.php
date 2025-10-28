@@ -2,11 +2,19 @@
 
 namespace App\Filament\Resources\Aluguels\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AluguelsTable
 {
@@ -14,40 +22,61 @@ class AluguelsTable
     {
         return $table
             ->columns([
-                TextColumn::make('cliente.id')
-                    ->numeric()
+                IconColumn::make('status')
+                    ->tooltip(fn(string $state): string => match ($state) {
+                        'ativo' => 'ATIVO',
+                        'finalizado' => 'FINALIZADO',
+                        'receber' => 'A RECEBER',
+                        'cancelado' => 'CANCELADO',
+                        default => strtoupper($state),
+                    })
+                    ->icon(fn(string $state): Heroicon => match ($state) {
+                        'ativo' => Heroicon::OutlinedCheckCircle,
+                        'finalizado' => Heroicon::OutlinedTruck,
+                        'receber' => Heroicon::OutlinedWrenchScrewdriver,
+                        'cancelado' => Heroicon::OutlinedXCircle,
+                    })
+                    ->colors([
+                        'success' => 'ativo',
+                        'info' => 'finalizado',
+                        'warning' => 'receber',
+                        'danger' => 'cancelado',
+                    ]),
+                TextColumn::make('cliente.nome')
                     ->sortable(),
-                TextColumn::make('carreta.id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('caixa.id')
+                TextColumn::make('carreta.identificacao')
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('data_retirada')
-                    ->date()
+                    ->label('Retirada')
+                    ->color('success')
+                    ->date('d/m/Y')
                     ->sortable(),
                 TextColumn::make('data_devolucao_prevista')
-                    ->date()
+                    ->label('Devolução Prevista')
+                    ->color('warning')
+                    ->date('d/m/Y')
                     ->sortable(),
                 TextColumn::make('data_devolucao_real')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('valor_diaria')
-                    ->numeric()
+                    ->date('d/m/Y')
                     ->sortable(),
                 TextColumn::make('quantidade_diarias')
+                    ->label('Diárias')
+                    ->description('Dias')
                     ->numeric()
+                    ->sortable(),
+                TextColumn::make('valor_diaria')
+                    ->money('BRL')
                     ->sortable(),
                 TextColumn::make('valor_total')
-                    ->numeric()
+                    ->money('BRL')
                     ->sortable(),
                 TextColumn::make('valor_pago')
-                    ->numeric()
+                    ->money('BRL')
                     ->sortable(),
                 TextColumn::make('valor_saldo')
-                    ->numeric()
+                    ->money('BRL')
                     ->sortable(),
-                TextColumn::make('status'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -65,7 +94,73 @@ class AluguelsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn ($record) => $record->status === 'ativo'),
+                Action::make('finalizar')
+                    ->label('Finalizar')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status === 'ativo')
+                    ->requiresConfirmation()
+                    ->modalHeading('Finalizar Aluguel')
+                    ->modalDescription('Informe a data de devolução e o valor do pagamento final.')
+                    ->form([
+                        DatePicker::make('data_devolucao_real')
+                            ->label('Data de Devolução')
+                            ->required()
+                            ->default(now())
+                            ->native(false),
+
+                        TextInput::make('valor_pagamento')
+                            ->label('Pagamento Final')
+                            ->numeric()
+                            ->prefix('R$')
+                            ->default(fn ($record) => $record->valor_saldo)
+                            ->helperText(fn ($record) => "Saldo restante: R$ " . number_format($record->valor_saldo, 2, ',', '.')),
+                    ])
+                    ->action(function ($record, array $data) {
+                        // Atualiza o aluguel
+                        $record->update([
+                            'data_devolucao_real' => $data['data_devolucao_real'],
+                            'status' => 'finalizado',
+                            'valor_pago' => $record->valor_pago + ($data['valor_pagamento'] ?? 0),
+                            'valor_saldo' => max(0, $record->valor_total - ($record->valor_pago + ($data['valor_pagamento'] ?? 0))),
+                        ]);
+
+                        // O Observer vai liberar a carreta automaticamente
+
+                        Notification::make()
+                            ->success()
+                            ->title('Aluguel finalizado com sucesso!')
+                            ->body("Carreta {$record->carreta->identificacao} foi liberada.")
+                            ->send();
+                    }),
+                // Action para Cancelar
+                Action::make('cancelar')
+                    ->label('Cancelar')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status === 'ativo')
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancelar Aluguel')
+                    ->modalDescription('Tem certeza que deseja cancelar este aluguel?')
+                    ->form([
+                        Textarea::make('motivo')
+                            ->label('Motivo do Cancelamento')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->cancelar($data['motivo']);
+
+                        // O Observer vai liberar a carreta automaticamente
+
+                        Notification::make()
+                            ->success()
+                            ->title('Aluguel cancelado')
+                            ->body("Carreta {$record->carreta->identificacao} foi liberada.")
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
