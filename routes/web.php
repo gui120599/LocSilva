@@ -1,13 +1,8 @@
 <?php
 
 use App\Models\Carreta;
-use App\Models\Cliente;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-
-Route::get('/', function () {
-    return view('welcome');
-});
 
 Route::get('/documento/print/{id}', function ($id) {
     $registro = Carreta::find($id); // 👈 Ajuste o Model

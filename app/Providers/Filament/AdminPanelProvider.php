@@ -26,11 +26,15 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => "#fa2d34",
+                'secondary' => "#faf205"
             ])
+            ->brandLogo(asset('logos/Logo LocSilva white.png'))
+            ->darkModeBrandLogo(asset('logos/Logo LocSilva.png'))
+            ->brandLogoHeight('50px')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -56,6 +60,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->viteTheme('resource/css/filament/admin/theme.css')
+            ;
     }
 }
