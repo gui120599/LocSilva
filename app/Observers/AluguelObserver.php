@@ -59,7 +59,7 @@ class AluguelObserver
         }
 
         // 2. Registrar movimento no caixa se houver pagamento
-        if ($aluguel->valor_pago > 0 && $aluguel->caixa_id) {
+        /*if ($aluguel->valor_pago > 0) {
             MovimentoCaixa::create([
                 'caixa_id' => $aluguel->caixa_id,
                 'aluguel_id' => $aluguel->id,
@@ -76,7 +76,7 @@ class AluguelObserver
                 'aluguel_id' => $aluguel->id,
                 'valor' => $aluguel->valor_pago,
             ]);
-        }
+        }*/
     }
 
     /**

@@ -12,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CarretasTable
 {
@@ -86,9 +87,11 @@ class CarretasTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('status', 'disponivel'))
             ->filters([
-                SelectFilter::make('status')
+                /*SelectFilter::make('status')
                     ->label('Status')
+                    ->default('disponivel')
                     ->options([
                         'disponivel' => 'Disponível',
                         'alugada' => 'Alugada',
@@ -104,7 +107,7 @@ class CarretasTable
                                 'this_month' => 'Este Mês',
                                 'this_year' => 'Este Ano',
                             ]),
-                    ])
+                    ])*/
             ])
             ->headerActions([
                 //

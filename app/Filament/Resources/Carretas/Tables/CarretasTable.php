@@ -7,10 +7,13 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\RestoreAction;
+use Filament\Forms\Components\Select;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -28,34 +31,6 @@ class CarretasTable
                     ->label('Identificação')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('tipo')
-                    ->sortable()
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('marca')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('modelo')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('ano')
-                    ->numeric()
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('placa')
-                    ->searchable()
-                    ->toggleable(),
-                TextColumn::make('capacidade_carga')
-                    ->numeric()
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('valor_diaria')
-                    ->money('BRL', divideBy: 1)
-                    ->sortable()
-                    ->badge()
-                    ->color('success')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->toggleable(),
                 IconColumn::make('status')
                     ->tooltip(fn(string $state): string => match ($state) {
                         'disponivel' => 'DISPONÍVEL',
@@ -73,6 +48,34 @@ class CarretasTable
                         'info' => 'alugada',
                         'warning' => 'manutencao',
                     ]),
+                TextColumn::make('tipo')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('marca')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('modelo')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('ano')
+
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('placa')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('capacidade_carga')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('valor_diaria')
+                    ->money('BRL', divideBy: 1)
+                    ->sortable()
+                    ->badge()
+                    ->color('success')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -88,6 +91,25 @@ class CarretasTable
             ])
             ->filters([
                 TrashedFilter::make(),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->default('disponivel')
+                    ->options([
+                        'disponivel' => 'Disponível',
+                        'alugada' => 'Alugada',
+                        'manutencao' => 'Em Manutenção',
+                    ]),
+                Filter::make('created_at')
+                    ->form([
+                        Select::make('created_at')
+                            ->label('Criado em')
+                            ->options([
+                                'today' => 'Hoje',
+                                'this_week' => 'Esta Semana',
+                                'this_month' => 'Este Mês',
+                                'this_year' => 'Este Ano',
+                            ]),
+                    ])
             ])
             ->recordActions([
                 //EditAction::make(),

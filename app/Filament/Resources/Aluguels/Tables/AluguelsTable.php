@@ -7,12 +7,14 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -31,8 +33,8 @@ class AluguelsTable
                         default => strtoupper($state),
                     })
                     ->icon(fn(string $state): Heroicon => match ($state) {
-                        'ativo' => Heroicon::OutlinedCheckCircle,
-                        'finalizado' => Heroicon::OutlinedTruck,
+                        'ativo' => Heroicon::OutlinedTruck,
+                        'finalizado' => Heroicon::OutlinedCheckCircle,
                         'receber' => Heroicon::OutlinedWrenchScrewdriver,
                         'cancelado' => Heroicon::OutlinedXCircle,
                     })
@@ -91,16 +93,24 @@ class AluguelsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->default('ativo')
+                    ->options([
+                        'ativo' => 'Ativo',
+                        'finalizado' => 'Finalizado',
+                        'receber' => 'A Receber',
+                        'cancelado' => 'Cancelado',
+                    ])
             ])
             ->recordActions([
                 EditAction::make()
-                    ->visible(fn ($record) => $record->status === 'ativo'),
+                    ->visible(fn($record) => $record->status === 'ativo'),
                 Action::make('finalizar')
                     ->label('Finalizar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status === 'ativo')
+                    ->visible(fn($record) => $record->status === 'ativo')
                     ->requiresConfirmation()
                     ->modalHeading('Finalizar Aluguel')
                     ->modalDescription('Informe a data de devolução e o valor do pagamento final.')
@@ -109,14 +119,14 @@ class AluguelsTable
                             ->label('Data de Devolução')
                             ->required()
                             ->default(now())
-                            ->native(false),
+                            ->maxDate(now()),
 
                         TextInput::make('valor_pagamento')
                             ->label('Pagamento Final')
                             ->numeric()
                             ->prefix('R$')
-                            ->default(fn ($record) => $record->valor_saldo)
-                            ->helperText(fn ($record) => "Saldo restante: R$ " . number_format($record->valor_saldo, 2, ',', '.')),
+                            ->default(fn($record) => $record->valor_saldo)
+                            ->helperText(fn($record) => "Saldo restante: R$ " . number_format($record->valor_saldo, 2, ',', '.')),
                     ])
                     ->action(function ($record, array $data) {
                         // Atualiza o aluguel
@@ -128,7 +138,7 @@ class AluguelsTable
                         ]);
 
                         // O Observer vai liberar a carreta automaticamente
-
+            
                         Notification::make()
                             ->success()
                             ->title('Aluguel finalizado com sucesso!')
@@ -140,7 +150,7 @@ class AluguelsTable
                     ->label('Cancelar')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn ($record) => $record->status === 'ativo')
+                    ->visible(fn($record) => $record->status === 'ativo')
                     ->requiresConfirmation()
                     ->modalHeading('Cancelar Aluguel')
                     ->modalDescription('Tem certeza que deseja cancelar este aluguel?')
@@ -154,7 +164,7 @@ class AluguelsTable
                         $record->cancelar($data['motivo']);
 
                         // O Observer vai liberar a carreta automaticamente
-
+            
                         Notification::make()
                             ->success()
                             ->title('Aluguel cancelado')
@@ -163,9 +173,9 @@ class AluguelsTable
                     }),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
+                /*BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                ]),
+                ]),*/
             ]);
     }
 }

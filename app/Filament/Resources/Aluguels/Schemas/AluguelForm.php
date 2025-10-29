@@ -23,6 +23,7 @@ use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
 use Filament\Tables\Columns\ImageColumn;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rules\ImageFile;
@@ -199,15 +200,17 @@ class AluguelForm
                                 ->columnSpan(1)
                                 ->schema([
                                     ModalTableSelect::make('carreta_id')
-                                        ->relationship('carreta', 'identificacao')
-                                        ->label('Carreta/Reboque')
+                                        ->relationship(
+                                            'carreta',
+                                            'identificacao'
+                                        )
+                                        ->label('Carreta/Reboque disponíveis')
                                         ->live()
                                         ->afterStateUpdated(function (Get $get, callable $set, $state) {
                                             $carreta = Carreta::find($state);
                                             if ($carreta) {
-                                                $set('valor_diaria', $carreta->valor_diaria);
-                                                $set('valor_total', $carreta->valor_diaria);
-                                                $set('valor_saldo', $carreta->valor_diaria);
+                                                $valorFormatado = number_format((float) $carreta->valor_diaria, 2, ',', '.');
+                                                $set('valor_diaria', $valorFormatado);
                                                 $set('carreta.foto', $carreta->foto);
                                                 $set('carreta.identificacao', $carreta->identificacao);
                                                 $set('carreta.status', $carreta->status);
@@ -256,13 +259,19 @@ class AluguelForm
                                         $diasValidos = $dias > 0 ? $dias : 1;
 
                                         $set('quantidade_diarias', $diasValidos);
-                                        $set('valor_total', $valorDiaria * $diasValidos);
-                                        // se quiser também atualizar valor_saldo ou outros campos, atualize aqui:
-                                        // $set('valor_saldo', $valorDiaria * $diasValidos);
+
+                                        // 1. Calcule o valor total
+                                        $valorTotal = $valorDiaria * $diasValidos;
+
+                                        // 2. Formate o valor para string com separadores brasileiros
+                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
+                        
+                                        // 3. Defina o estado com a string formatada
+                                        $set('valor_total', $valorFormatado);
                                     } else {
                                         // se algum dos dois campos estiver vazio, zera quantidade/total (opcional)
                                         $set('quantidade_diarias', null);
-                                        $set('valor_total', null);
+                                        $set('valor_total', '0,00');
                                     }
                                 })
                                 ->required(),
@@ -271,8 +280,10 @@ class AluguelForm
                         ->columns(3)
                         ->schema([
                             TextInput::make('quantidade_diarias')
+                                ->readOnly()
                                 ->required(),
                             TextInput::make('valor_diaria')
+                                ->live()
                                 ->required()
                                 ->prefix('R$')
                                 ->mask(RawJs::make(<<<'JS'
@@ -296,8 +307,26 @@ class AluguelForm
 
                                     return number_format((float) $state, 2, ',', '.');
                                 })
-                                ->placeholder('0,00'),
+                                ->placeholder('0,00')
+                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                    $quantidadeDiarias = intval($get('quantidade_diarias') ?? 0);
+
+                                    if ($quantidadeDiarias > 0) {
+                                        // 1. Calcule o valor total
+                                        $valorTotal = floatval($state) * $quantidadeDiarias;
+
+                                        // 2. Formate o valor para string com separadores brasileiros
+                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
+                        
+                                        // 3. Defina o estado com a string formatada
+                                        $set('valor_total', $valorFormatado);
+                                    } else {
+                                        // se quantidade de diárias for zero, zera total (opcional)
+                                        $set('valor_total', '0,00');
+                                    }
+                                }),
                             TextInput::make('valor_total')
+                                ->readOnly()
                                 ->required()
                                 ->prefix('R$')
                                 ->mask(RawJs::make(<<<'JS'
@@ -323,6 +352,7 @@ class AluguelForm
                                 })
                                 ->placeholder('0,00'),
                             TextInput::make('valor_pago')
+                                ->live()
                                 ->required()
                                 ->prefix('R$')
                                 ->mask(RawJs::make(<<<'JS'
@@ -346,7 +376,24 @@ class AluguelForm
 
                                     return number_format((float) $state, 2, ',', '.');
                                 })
-                                ->placeholder('0,00'),
+                                ->placeholder('0,00')
+                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                    $valorTotalStr = $get('valor_total') ?? '0,00';
+                                    // Remove formatação
+                                    $valorTotal = floatval(str_replace(['R$', '.', ' '], '', str_replace(',', '.', $valorTotalStr)));
+
+                                    // Remove formatação do valor pago
+                                    $valorPago = floatval(str_replace(['R$', '.', ' '], '', str_replace(',', '.', $state)));
+
+                                    // Calcula saldo
+                                    $saldo = max(0, $valorTotal - $valorPago);
+
+                                    // Formata saldo
+                                    $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
+
+                                    // Seta o saldo
+                                    $set('valor_saldo', $saldoFormatado);
+                                }),
                             TextInput::make('valor_saldo')
                                 ->required()
                                 ->prefix('R$')
