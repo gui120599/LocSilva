@@ -42,12 +42,12 @@ return new class extends Migration
             $table->integer('last_activity')->index();
         });
 
-        /*DB::table('users')->insert([
+        DB::table('users')->insert([
             'role_id' => 1,
             'name' => 'admin',
-            'email' => 'admin@teste.com',
+            'email' => 'admin@razeltec.com.br',
             'password' => Hash::make('password'),
-        ]);*/
+        ]);
     }
 
     /**

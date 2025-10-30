@@ -68,5 +68,40 @@ class User extends Authenticatable implements HasAvatar
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Um usuário pode ter vários caixas
+     */
+    public function caixas(): HasMany
+    {
+        return $this->hasMany(Caixa::class);
+    }
+
+    /**
+     * Um usuário pode ter vários movimentos
+     */
+    public function movimentos(): HasMany
+    {
+        return $this->hasMany(MovimentoCaixa::class);
+    }
+
+    /**
+     * Caixa aberto do usuário
+     */
+    public function caixaAberto()
+    {
+        return $this->caixas()
+            ->where('status', 'aberto')
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Verifica se tem caixa aberto
+     */
+    public function hasCaixaAberto(): bool
+    {
+        return $this->caixaAberto() !== null;
+    }
+
 
 }

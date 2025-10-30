@@ -14,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -101,11 +102,25 @@ class AluguelsTable
                         'finalizado' => 'Finalizado',
                         'receber' => 'A Receber',
                         'cancelado' => 'Cancelado',
-                    ])
+                    ]),
+                    Filter::make('data_retirada')
+                    ->schema([
+                        DatePicker::make('data_retirada_de')
+                            ->label('Data de Retirada De')
+                            ->placeholder('Data de Retirada De'),
+                        DatePicker::make('data_retirada_ate')
+                            ->label('Data de Retirada Até')
+                            ->placeholder('Data de Retirada Até'),
+                    ]),
+                    SelectFilter::make('cliente_id')
+                    ->label('Cliente')
+                    ->relationship('cliente', 'nome')
+                    ->multiple()
+                    ->searchable()->preload(10)
             ])
             ->recordActions([
-                EditAction::make()
-                    ->visible(fn($record) => $record->status === 'ativo'),
+                /*EditAction::make()
+                    ->visible(fn($record) => $record->status === 'ativo'),*/
                 Action::make('finalizar')
                     ->label('Finalizar')
                     ->icon('heroicon-o-check-circle')

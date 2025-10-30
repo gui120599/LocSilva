@@ -29,4 +29,33 @@ class Cliente extends Model
     {
         return $this->hasMany(Aluguel::class);
     }
+
+    /**
+     * Aluguéis ativos do cliente
+     */
+    public function alugueisAtivos(): HasMany
+    {
+        return $this->alugueis()->where('status', 'ativo');
+    }
+
+    /**
+     * Total gasto pelo cliente
+     */
+    public function getTotalGastoAttribute(): float
+    {
+        return $this->alugueis()
+            ->whereIn('status', ['finalizado', 'ativo'])
+            ->sum('valor_total');
+    }
+
+    /**
+     * Total em aberto do cliente
+     */
+    public function getTotalAbertoAttribute(): float
+    {
+        return $this->alugueis()
+            ->where('status', 'ativo')
+            ->get()
+            ->sum('saldo');
+    }
 }
