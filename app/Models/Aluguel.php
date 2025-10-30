@@ -43,7 +43,7 @@ class Aluguel extends Model
      */
     public function cliente(): BelongsTo
     {
-        return $this->belongsTo(Cliente::class);
+        return $this->belongsTo(Cliente::class, 'cliente_id');
     }
 
     /**
@@ -51,7 +51,7 @@ class Aluguel extends Model
      */
     public function carreta(): BelongsTo
     {
-        return $this->belongsTo(Carreta::class);
+        return $this->belongsTo(Carreta::class, 'carreta_id');
     }
 
     /**
@@ -59,7 +59,7 @@ class Aluguel extends Model
      */
     public function movimentos(): HasMany
     {
-        return $this->hasMany(MovimentoCaixa::class);
+        return $this->hasMany(MovimentoCaixa::class, 'aluguel_id');
     }
 
     /**

@@ -27,7 +27,7 @@ class Cliente extends Model
 
     public function alugueis(): HasMany
     {
-        return $this->hasMany(Aluguel::class);
+        return $this->hasMany(Aluguel::class, 'cliente_id');
     }
 
     /**

@@ -30,7 +30,7 @@ class Caixa extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -38,7 +38,7 @@ class Caixa extends Model
      */
     public function movimentos(): HasMany
     {
-        return $this->hasMany(MovimentoCaixa::class);
+        return $this->hasMany(MovimentoCaixa::class, 'caixa_id');
     }
 
     /**

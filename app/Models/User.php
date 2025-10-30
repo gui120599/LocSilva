@@ -65,7 +65,7 @@ class User extends Authenticatable implements HasAvatar
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     /**
@@ -73,7 +73,7 @@ class User extends Authenticatable implements HasAvatar
      */
     public function caixas(): HasMany
     {
-        return $this->hasMany(Caixa::class);
+        return $this->hasMany(Caixa::class, 'user_id');
     }
 
     /**
@@ -81,7 +81,7 @@ class User extends Authenticatable implements HasAvatar
      */
     public function movimentos(): HasMany
     {
-        return $this->hasMany(MovimentoCaixa::class);
+        return $this->hasMany(MovimentoCaixa::class, 'user_id');
     }
 
     /**

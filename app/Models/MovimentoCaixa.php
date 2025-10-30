@@ -44,7 +44,7 @@ class MovimentoCaixa extends Model
      */
     public function caixa(): BelongsTo
     {
-        return $this->belongsTo(Caixa::class);
+        return $this->belongsTo(Caixa::class, 'caixa_id');
     }
 
     /**
@@ -52,7 +52,7 @@ class MovimentoCaixa extends Model
      */
     public function aluguel(): BelongsTo
     {
-        return $this->belongsTo(Aluguel::class);
+        return $this->belongsTo(Aluguel::class, 'aluguel_id');
     }
 
     /**
@@ -60,7 +60,7 @@ class MovimentoCaixa extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -68,7 +68,7 @@ class MovimentoCaixa extends Model
      */
     public function metodoPagamento(): BelongsTo
     {
-        return $this->belongsTo(MetodoPagamento::class);
+        return $this->belongsTo(MetodoPagamento::class, 'metodo_pagamento_id');
     }
 
     /**

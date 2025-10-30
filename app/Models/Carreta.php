@@ -34,7 +34,7 @@ class Carreta extends Model
      */
     public function alugueis(): HasMany
     {
-        return $this->hasMany(Aluguel::class);
+        return $this->hasMany(Aluguel::class, 'carreta_id');
     }
 
     /**
