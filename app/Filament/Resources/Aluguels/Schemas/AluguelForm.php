@@ -57,7 +57,7 @@ class AluguelForm
                                 ->schema([
                                     Select::make('cliente_id')->suffixIcon('heroicon-o-user-group')
                                         ->relationship('cliente', 'nome')
-                                        ->createOptionForm([
+                                        /*->createOptionForm([
                                             Section::make()
                                                 ->description('Dados do cliente')
                                                 ->icon('heroicon-s-user-circle')
@@ -185,7 +185,7 @@ class AluguelForm
                                                 ->schema([
                                                     Textarea::make('observacoes'),
                                                 ])
-                                        ])
+                                        ])*/
                                         ->searchable()
                                         ->preload()
                                         ->required(),
@@ -320,6 +320,17 @@ class AluguelForm
                         
                                         // 3. Defina o estado com a string formatada
                                         $set('valor_total', $valorFormatado);
+                                        if (floatval($get('valor_pago')) > 0) {
+
+                                            $saldo = $valorTotal - floatval($get('valor_pago'));
+
+                                            // Formata saldo
+                                            $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
+
+                                            // Seta o saldo
+                                            $set('valor_saldo', $saldoFormatado);
+                                        }
+
                                     } else {
                                         // se quantidade de diárias for zero, zera total (opcional)
                                         $set('valor_total', '0,00');
@@ -380,13 +391,13 @@ class AluguelForm
                                 ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                     $valorTotalStr = $get('valor_total') ?? '0,00';
                                     // Remove formatação
-                                    $valorTotal = floatval(str_replace(['R$', '.', ' '], '', str_replace(',', '.', $valorTotalStr)));
+                                    $valorTotal = floatval(str_replace(',', '.', $valorTotalStr));
 
                                     // Remove formatação do valor pago
-                                    $valorPago = floatval(str_replace(['R$', '.', ' '], '', str_replace(',', '.', $state)));
+                                    $valorPago = floatval(str_replace(',', '.', $state));
 
                                     // Calcula saldo
-                                    $saldo = max(0, $valorTotal - $valorPago);
+                                    $saldo = $valorTotal - $valorPago;
 
                                     // Formata saldo
                                     $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
