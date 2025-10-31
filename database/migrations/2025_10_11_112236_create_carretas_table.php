@@ -21,8 +21,8 @@ return new class extends Migration {
             $table->integer('ano')->nullable();
             $table->string('placa')->nullable();
             $table->decimal('capacidade_carga', 8, 2)->nullable();
-            $table->decimal('valor_diaria', 8, 2);
-            $table->decimal('valor_venda', 8, 2);
+            $table->decimal('valor_diaria', 8, 2)->default(0);
+            $table->decimal('valor_venda', 8, 2)->default(0);
             $table->enum('status', ['disponivel', 'alugada', 'manutencao','baixada','vendida'])->default('disponivel');
             $table->text('observacoes')->nullable();
 

@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->string('descricao')->nullable();
             $table->enum('tipo', ['entrada', 'saida'])->default('entrada');
             $table->foreignId('metodo_pagamento_id')->constrained('metodos_pagamentos');
-            $table->foreignId('cartao_pagamento_id')->nullable()->constrained('cartoes_pagamento');
+            $table->foreignId('cartao_pagamento_id')->nullable()->constrained('bandeira_cartao_pagamentos');
             $table->string('autorizacao')->nullable();
             $table->decimal('valor_pago', 10, 2);
             $table->decimal('valor_recebido', 10, 2)->default(0);
@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->decimal('valor_desconto', 10, 2)->default(0);
             $table->decimal('troco', 10, 2)->default(0);
             $table->decimal('valor_total', 10, 2)->default(0);
-            $table->dateTime('data_movimento');
+
             $table->timestamps();
             $table->softDeletes();
         });

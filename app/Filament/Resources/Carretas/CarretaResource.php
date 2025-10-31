@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class CarretaResource extends Resource
 {
@@ -22,6 +23,8 @@ class CarretaResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
     protected static ?string $recordTitleAttribute = 'identificacao';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Cadastros';
 
     public static function form(Schema $schema): Schema
     {

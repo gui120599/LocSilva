@@ -57,7 +57,7 @@ class AluguelForm
                                 ->schema([
                                     Select::make('cliente_id')->suffixIcon('heroicon-o-user-group')
                                         ->relationship('cliente', 'nome')
-                                        /*->createOptionForm([
+                                        ->createOptionForm([
                                             Section::make()
                                                 ->description('Dados do cliente')
                                                 ->icon('heroicon-s-user-circle')
@@ -185,7 +185,7 @@ class AluguelForm
                                                 ->schema([
                                                     Textarea::make('observacoes'),
                                                 ])
-                                        ])*/
+                                        ])
                                         ->searchable()
                                         ->preload()
                                         ->required(),

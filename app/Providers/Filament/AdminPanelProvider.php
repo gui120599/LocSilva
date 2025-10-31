@@ -6,6 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -32,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => "#fa2d34",
                 'secondary' => "#faf205"
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logos/Logo LocSilva white.png'))
             ->darkModeBrandLogo(asset('logos/Logo LocSilva.png'))
             ->brandLogoHeight('50px')
@@ -61,7 +63,8 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->topbar(false)
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ;
+        ;
     }
 }

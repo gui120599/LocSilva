@@ -49,4 +49,26 @@ class AluguelResource extends Resource
             'edit' => EditAluguel::route('/{record}/edit'),
         ];
     }
+    public static function getNavigationBadge(): ?string
+    {
+        // 1. Obtém a classe do modelo (static::getModel())
+        $modelClass = static::getModel();
+
+        // 2. Chama o método estático 'where' na classe do modelo,
+        //    que retorna o Builder, e encadeia o método de instância 'count()'
+        return $modelClass::whereIn('status', ['ativo','pendente'])->count();
+    }
+    public static function getNavigationBadgeColor(): ?string
+    {
+        // 1. Obtém a classe do modelo (static::getModel())
+        $modelClass = static::getModel();
+
+        // 2. Chama o método estático 'where' na classe do modelo,
+        //    que retorna o Builder, e encadeia o método de instância 'count()'
+        return $modelClass::whereIn('status', ['ativo','pendente'])->count() >= 0 ? 'success' : null;
+    }
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Alugueis ativos/pendentes';
+    }
 }

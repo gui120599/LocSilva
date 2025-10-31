@@ -29,20 +29,20 @@ class AluguelsTable
                     ->tooltip(fn(string $state): string => match ($state) {
                         'ativo' => 'ATIVO',
                         'finalizado' => 'FINALIZADO',
-                        'receber' => 'A RECEBER',
+                        'pendente' => 'PENDENTE',
                         'cancelado' => 'CANCELADO',
                         default => strtoupper($state),
                     })
                     ->icon(fn(string $state): Heroicon => match ($state) {
                         'ativo' => Heroicon::OutlinedTruck,
                         'finalizado' => Heroicon::OutlinedCheckCircle,
-                        'receber' => Heroicon::OutlinedWrenchScrewdriver,
+                        'pendente' => Heroicon::OutlinedExclamationCircle,
                         'cancelado' => Heroicon::OutlinedXCircle,
                     })
                     ->colors([
                         'success' => 'ativo',
                         'info' => 'finalizado',
-                        'warning' => 'receber',
+                        'warning' => 'pendente',
                         'danger' => 'cancelado',
                     ]),
                 TextColumn::make('cliente.nome')
@@ -95,12 +95,13 @@ class AluguelsTable
             ])
             ->filters([
                 SelectFilter::make('status')
+                    ->multiple()
                     ->label('Status')
-                    ->default('ativo')
+                    ->default([ 'ativo', 'pendente'])
                     ->options([
                         'ativo' => 'Ativo',
                         'finalizado' => 'Finalizado',
-                        'receber' => 'A Receber',
+                        'pendente' => 'Pendente',
                         'cancelado' => 'Cancelado',
                     ]),
                     Filter::make('data_retirada')
