@@ -7,6 +7,7 @@ use App\Filament\Resources\Aluguels\Pages\EditAluguel;
 use App\Filament\Resources\Aluguels\Pages\ListAluguels;
 use App\Filament\Resources\Aluguels\Schemas\AluguelForm;
 use App\Filament\Resources\Aluguels\Tables\AluguelsTable;
+use App\Filament\Resources\Caixas\RelationManagers\MovimentosRelationManager;
 use App\Models\Aluguel;
 use BackedEnum;
 use Filament\Resources\Resource;

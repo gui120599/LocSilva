@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('movimentos_caixas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('caixa_id')->constrained('caixas');
+            $table->foreignId('caixa_id')->nullable()->constrained('caixas');
             $table->foreignId('aluguel_id')->nullable()->constrained('alugueis');
             $table->foreignId('user_id')->constrained('users');
             $table->string('descricao')->nullable();

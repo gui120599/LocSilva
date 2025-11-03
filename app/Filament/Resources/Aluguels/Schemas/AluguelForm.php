@@ -4,14 +4,19 @@ namespace App\Filament\Resources\Aluguels\Schemas;
 
 use App\Filament\Tables\CarretasTable;
 use App\Models\Carreta;
+use App\Models\MetodoPagamento;
 use App\Services\IBGEServices;
 use Carbon\Carbon;
+use Closure;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\ModalTableSelect;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Image;
@@ -21,6 +26,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
 use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,8 +82,8 @@ class AluguelForm
                                                                 ->autocomplete(false)
                                                                 ->dehydrateStateUsing(fn(string $state) => preg_replace("/\D/", "", $state))
                                                                 ->mask(RawJs::make(<<<'JS'
-                                        $input.length > 14 ? '99.999.999/9999-99' : '999.999.999-99'
-                                        JS
+                                                                    $input.length > 14 ? '99.999.999/9999-99' : '999.999.999-99'
+                                                                    JS
                                                                 ))
                                                                 ->disabled(fn(string $operation): bool => $operation === 'edit')
                                                                 ->rules([ //Não funciona o unique() pq ele verifica com a mask e na hora que salva no banco ele salva sem a mask
@@ -188,7 +194,10 @@ class AluguelForm
                                         ])
                                         ->searchable()
                                         ->preload()
-                                        ->required(),
+                                        ->required()
+                                        ->validationMessages([
+                                            'required' => 'Selecione um cliente para prosseguir com o Aluguel.'
+                                        ]),
                                 ]),
                         ]),
                     Step::make('Carreta/Reboque')
@@ -216,7 +225,11 @@ class AluguelForm
                                                 $set('carreta.status', $carreta->status);
                                             }
                                         })
-                                        ->tableConfiguration(CarretasTable::class),
+                                        ->tableConfiguration(CarretasTable::class)
+                                        ->required()
+                                        ->validationMessages([
+                                            'required' => 'Selecione uma Carreta ou Reboque para prosseguir com o Aluguel.'
+                                        ]),
                                     Section::make()
                                         ->description('Detalhes da Carreta/Reboque')
                                         ->schema([
@@ -277,159 +290,251 @@ class AluguelForm
                                 ->required(),
                         ]),
                     Step::make('Valores')
-                        ->columns(3)
+                        ->columns(4)
                         ->schema([
-                            TextInput::make('quantidade_diarias')
-                                ->readOnly()
-                                ->required(),
-                            TextInput::make('valor_diaria')
-                                ->live()
-                                ->required()
-                                ->prefix('R$')
-                                ->mask(RawJs::make(<<<'JS'
+                            Section::make('Pagamentos')
+                                ->collapsed()
+                                ->icon('heroicon-o-banknotes')
+                                ->columnSpan(3)
+                                ->schema([
+                                    Repeater::make('movimentos')
+                                        ->columns(4)
+                                        ->label('Pagamentos')
+                                        ->relationship()
+                                        ->schema([
+                                            Select::make('user_id')
+                                                ->relationship('user', 'name')
+                                                ->default(auth()->user()->id),
+                                            Select::make('tipo')
+                                                ->hidden()
+                                                ->options(['entrada' => 'Entrada', 'saida' => 'Saida'])
+                                                ->default('entrada')
+                                                ->required(),
+                                            ToggleButtons::make('metodo_pagamento_id')
+                                                ->label('Método do Pagamento')
+                                                ->columnSpanFull()
+                                                ->options(
+                                                    function () {
+                                                        return MetodoPagamento::pluck('nome', 'id')->toArray();
+                                                    }
+                                                )
+                                                ->icons([
+                                                    1 => Heroicon::Banknotes,
+                                                    2 => Heroicon::CreditCard,
+                                                    3 => Heroicon::CreditCard,
+                                                    4 => Heroicon::QrCode
+                                                ])
+                                                ->default(1)
+                                                ->grouped(),
+
+                                            Select::make('cartao_pagamento_id')
+                                                ->relationship('bandeiraCartao', 'bandeira')
+                                                // Tornar este campo visível APENAS se o método de pagamento for 'Cartão' (opcional)
+                                                ->visible(function ($get) {
+                                                    // Pega o NOME do método de pagamento
+                                                    $metodoNome = $get('metodoPagamento.nome');
+
+                                                    // Se a relação não carregar o nome, use o ID e procure manualmente
+                                                    // Se a relação estiver bem definida, o código acima funciona
+                                                    return $metodoNome === 'Cartão';
+                                                }),
+
+                                            TextInput::make('autorizacao')
+                                                ->label('Nº de Autorização da Transação')
+                                                // Define a visibilidade do campo 'autorizacao'
+                                                ->visible(function ($get) {
+                                                    // Captura o nome do método de pagamento selecionado.
+                                                    // O '.nome' funciona porque o Select acima usa 'metodoPagamento.nome' na relação.
+                                                    $metodoNome = $get('metodoPagamento.nome');
+
+                                                    // Verifica se o nome está na lista de métodos que exigem autorização.
+                                                    return in_array($metodoNome, ['Cartão', 'Pix']);
+
+                                                    // Caso você precise usar o ID (mais seguro), use o ID:
+                                                    // $metodoId = $get('metodo_pagamento_id'); 
+                                                    // return in_array($metodoId, [1, 2]); // Ex: 1 para Cartão, 2 para Pix
+                                                }),
+                                            TextInput::make('valor_pago')
+                                                ->required()
+                                                ->numeric(),
+                                            TextInput::make('valor_recebido')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(0.0),
+                                            TextInput::make('valor_acrescimo')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(0.0),
+                                            TextInput::make('valor_desconto')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(0.0),
+                                            TextInput::make('troco')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(0.0),
+                                            TextInput::make('valor_total')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(0.0),
+                                        ])
+                                ]),
+                            Section::make('Valores')
+                                ->columnSpan(1)
+                                ->schema([
+                                    TextInput::make('quantidade_diarias')
+                                        ->readOnly()
+                                        ->required(),
+                                    TextInput::make('valor_diaria')
+                                        ->live()
+                                        ->required()
+                                        ->prefix('R$')
+                                        ->mask(RawJs::make(<<<'JS'
                                             $money($input, ',', '.', 2)
                                         JS))
-                                ->dehydrateStateUsing(function ($state) {
-                                    // Remove formatação antes de salvar
-                                    if (!$state)
-                                        return 0;
+                                        ->dehydrateStateUsing(function ($state) {
+                                            // Remove formatação antes de salvar
+                                            if (!$state)
+                                                return 0;
 
-                                    // Remove R$, pontos e converte vírgula em ponto
-                                    $value = str_replace(['R$', '.', ' '], '', $state);
-                                    $value = str_replace(',', '.', $value);
+                                            // Remove R$, pontos e converte vírgula em ponto
+                                            $value = str_replace(['R$', '.', ' '], '', $state);
+                                            $value = str_replace(',', '.', $value);
 
-                                    return (float) $value;
-                                })
-                                ->formatStateUsing(function ($state) {
-                                    // Formata para exibição
-                                    if (!$state)
-                                        return '0,00';
+                                            return (float) $value;
+                                        })
+                                        ->formatStateUsing(function ($state) {
+                                            // Formata para exibição
+                                            if (!$state)
+                                                return '0,00';
 
-                                    return number_format((float) $state, 2, ',', '.');
-                                })
-                                ->placeholder('0,00')
-                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                    $quantidadeDiarias = intval($get('quantidade_diarias') ?? 0);
+                                            return number_format((float) $state, 2, ',', '.');
+                                        })
+                                        ->placeholder('0,00')
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                            $quantidadeDiarias = intval($get('quantidade_diarias') ?? 0);
 
-                                    if ($quantidadeDiarias > 0) {
-                                        // 1. Calcule o valor total
-                                        $valorTotal = floatval($state) * $quantidadeDiarias;
+                                            if ($quantidadeDiarias > 0) {
+                                                // 1. Calcule o valor total
+                                                $valorTotal = floatval($state) * $quantidadeDiarias;
 
-                                        // 2. Formate o valor para string com separadores brasileiros
-                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
-                        
-                                        // 3. Defina o estado com a string formatada
-                                        $set('valor_total', $valorFormatado);
-                                        if (floatval($get('valor_pago')) > 0) {
+                                                // 2. Formate o valor para string com separadores brasileiros
+                                                $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
+                                
+                                                // 3. Defina o estado com a string formatada
+                                                $set('valor_total', $valorFormatado);
+                                                if (floatval($get('valor_pago')) > 0) {
 
-                                            $saldo = $valorTotal - floatval($get('valor_pago'));
+                                                    $saldo = $valorTotal - floatval($get('valor_pago'));
+
+                                                    // Formata saldo
+                                                    $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
+
+                                                    // Seta o saldo
+                                                    $set('valor_saldo', $saldoFormatado);
+                                                }
+
+                                            } else {
+                                                // se quantidade de diárias for zero, zera total (opcional)
+                                                $set('valor_total', '0,00');
+                                            }
+                                        }),
+                                    TextInput::make('valor_total')
+                                        ->readOnly()
+                                        ->required()
+                                        ->prefix('R$')
+                                        ->mask(RawJs::make(<<<'JS'
+                                            $money($input, ',', '.', 2)
+                                        JS))
+                                        ->dehydrateStateUsing(function ($state) {
+                                            // Remove formatação antes de salvar
+                                            if (!$state)
+                                                return 0;
+
+                                            // Remove R$, pontos e converte vírgula em ponto
+                                            $value = str_replace(['R$', '.', ' '], '', $state);
+                                            $value = str_replace(',', '.', $value);
+
+                                            return (float) $value;
+                                        })
+                                        ->formatStateUsing(function ($state) {
+                                            // Formata para exibição
+                                            if (!$state)
+                                                return '0,00';
+
+                                            return number_format((float) $state, 2, ',', '.');
+                                        })
+                                        ->placeholder('0,00'),
+                                    TextInput::make('valor_pago')
+                                        ->live()
+                                        ->required()
+                                        ->prefix('R$')
+                                        ->mask(RawJs::make(<<<'JS'
+                                            $money($input, ',', '.', 2)
+                                        JS))
+                                        ->dehydrateStateUsing(function ($state) {
+                                            // Remove formatação antes de salvar
+                                            if (!$state)
+                                                return 0;
+
+                                            // Remove R$, pontos e converte vírgula em ponto
+                                            $value = str_replace(['R$', '.', ' '], '', $state);
+                                            $value = str_replace(',', '.', $value);
+
+                                            return (float) $value;
+                                        })
+                                        ->formatStateUsing(function ($state) {
+                                            // Formata para exibição
+                                            if (!$state)
+                                                return '0,00';
+
+                                            return number_format((float) $state, 2, ',', '.');
+                                        })
+                                        ->placeholder('0,00')
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                            $valorTotalStr = $get('valor_total') ?? '0,00';
+                                            // Remove formatação
+                                            $valorTotal = floatval(str_replace(',', '.', $valorTotalStr));
+
+                                            // Remove formatação do valor pago
+                                            $valorPago = floatval(str_replace(',', '.', $state));
+
+                                            // Calcula saldo
+                                            $saldo = $valorTotal - $valorPago;
 
                                             // Formata saldo
                                             $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
 
                                             // Seta o saldo
                                             $set('valor_saldo', $saldoFormatado);
-                                        }
-
-                                    } else {
-                                        // se quantidade de diárias for zero, zera total (opcional)
-                                        $set('valor_total', '0,00');
-                                    }
-                                }),
-                            TextInput::make('valor_total')
-                                ->readOnly()
-                                ->required()
-                                ->prefix('R$')
-                                ->mask(RawJs::make(<<<'JS'
+                                        }),
+                                    TextInput::make('valor_saldo')
+                                        ->required()
+                                        ->prefix('R$')
+                                        ->mask(RawJs::make(<<<'JS'
                                             $money($input, ',', '.', 2)
                                         JS))
-                                ->dehydrateStateUsing(function ($state) {
-                                    // Remove formatação antes de salvar
-                                    if (!$state)
-                                        return 0;
+                                        ->dehydrateStateUsing(function ($state) {
+                                            // Remove formatação antes de salvar
+                                            if (!$state)
+                                                return 0;
 
-                                    // Remove R$, pontos e converte vírgula em ponto
-                                    $value = str_replace(['R$', '.', ' '], '', $state);
-                                    $value = str_replace(',', '.', $value);
+                                            // Remove R$, pontos e converte vírgula em ponto
+                                            $value = str_replace(['R$', '.', ' '], '', $state);
+                                            $value = str_replace(',', '.', $value);
 
-                                    return (float) $value;
-                                })
-                                ->formatStateUsing(function ($state) {
-                                    // Formata para exibição
-                                    if (!$state)
-                                        return '0,00';
+                                            return (float) $value;
+                                        })
+                                        ->formatStateUsing(function ($state) {
+                                            // Formata para exibição
+                                            if (!$state)
+                                                return '0,00';
 
-                                    return number_format((float) $state, 2, ',', '.');
-                                })
-                                ->placeholder('0,00'),
-                            TextInput::make('valor_pago')
-                                ->live()
-                                ->required()
-                                ->prefix('R$')
-                                ->mask(RawJs::make(<<<'JS'
-                                            $money($input, ',', '.', 2)
-                                        JS))
-                                ->dehydrateStateUsing(function ($state) {
-                                    // Remove formatação antes de salvar
-                                    if (!$state)
-                                        return 0;
+                                            return number_format((float) $state, 2, ',', '.');
+                                        })
+                                        ->placeholder('0,00'),
+                                ]),
 
-                                    // Remove R$, pontos e converte vírgula em ponto
-                                    $value = str_replace(['R$', '.', ' '], '', $state);
-                                    $value = str_replace(',', '.', $value);
-
-                                    return (float) $value;
-                                })
-                                ->formatStateUsing(function ($state) {
-                                    // Formata para exibição
-                                    if (!$state)
-                                        return '0,00';
-
-                                    return number_format((float) $state, 2, ',', '.');
-                                })
-                                ->placeholder('0,00')
-                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                    $valorTotalStr = $get('valor_total') ?? '0,00';
-                                    // Remove formatação
-                                    $valorTotal = floatval(str_replace(',', '.', $valorTotalStr));
-
-                                    // Remove formatação do valor pago
-                                    $valorPago = floatval(str_replace(',', '.', $state));
-
-                                    // Calcula saldo
-                                    $saldo = $valorTotal - $valorPago;
-
-                                    // Formata saldo
-                                    $saldoFormatado = number_format((float) $saldo, 2, ',', '.');
-
-                                    // Seta o saldo
-                                    $set('valor_saldo', $saldoFormatado);
-                                }),
-                            TextInput::make('valor_saldo')
-                                ->required()
-                                ->prefix('R$')
-                                ->mask(RawJs::make(<<<'JS'
-                                            $money($input, ',', '.', 2)
-                                        JS))
-                                ->dehydrateStateUsing(function ($state) {
-                                    // Remove formatação antes de salvar
-                                    if (!$state)
-                                        return 0;
-
-                                    // Remove R$, pontos e converte vírgula em ponto
-                                    $value = str_replace(['R$', '.', ' '], '', $state);
-                                    $value = str_replace(',', '.', $value);
-
-                                    return (float) $value;
-                                })
-                                ->formatStateUsing(function ($state) {
-                                    // Formata para exibição
-                                    if (!$state)
-                                        return '0,00';
-
-                                    return number_format((float) $state, 2, ',', '.');
-                                })
-                                ->placeholder('0,00'),
                         ])
 
                 ]),

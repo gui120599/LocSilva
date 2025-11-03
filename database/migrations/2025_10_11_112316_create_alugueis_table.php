@@ -23,6 +23,8 @@ return new class extends Migration {
             $table->decimal('valor_acrescimo', 10, 2)->default(0);
             $table->decimal('valor_desconto', 10, 2)->default(0);
             $table->decimal('valor_total', 10, 2)->default(0);
+            $table->decimal('valor_pago', 10, 2)->default(0);
+            $table->decimal('valor_saldo', 10, 2)->default(0);
             $table->enum('status', ['ativo', 'pendente', 'finalizado', 'cancelado'])->default('ativo');
             $table->text('observacoes')->nullable();
             

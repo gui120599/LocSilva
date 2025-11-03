@@ -62,6 +62,8 @@ class Aluguel extends Model
         return $this->hasMany(MovimentoCaixa::class, 'aluguel_id');
     }
 
+    
+
     /**
      * Calcula o valor total do aluguel
      */
