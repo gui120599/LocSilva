@@ -25,9 +25,14 @@ class CaixaForm
                     ->columnSpan(1)
                     ->schema([
                         Select::make('user_id')
+                            ->label('Responsável')
                             ->relationship('user', 'name')
+                            ->default(auth()->user()->id)
+                            ->searchable()
+                            ->preload()
                             ->required(),
                         DateTimePicker::make('data_abertura')
+                            ->default(now())
                             ->required(),
                         DateTimePicker::make('data_fechamento'),
                         Select::make('status')
@@ -38,13 +43,16 @@ class CaixaForm
                             ->columnSpanFull(),
                     ]),
                 Section::make('Saldo Inicial')
+                    ->visible(fn(string $context) => $context === 'create')
                     ->icon('heroicon-o-banknotes')
                     ->columnSpan(2)
                     ->schema([
                         Repeater::make('movimentos')
+                            ->deletable(false)
                             ->columns(4)
-                            ->label('Pagamentos')
+                            ->label('Recebimentos do Saldo Inicial')
                             ->relationship()
+                            ->maxItems(1)
                             ->schema([
                                 TextInput::make('descricao')
                                     ->default('Saldo Inicial')
@@ -52,7 +60,10 @@ class CaixaForm
                                     ->required()
                                     ->columnSpanFull(),
                                 Select::make('user_id')
+                                    ->label('Responsável')
                                     ->relationship('user', 'name')
+                                    ->disabled()
+                                    ->dehydrated()
                                     ->default(auth()->user()->id),
                                 Select::make('tipo')
                                     ->hidden()
@@ -60,6 +71,7 @@ class CaixaForm
                                     ->default('entrada')
                                     ->required(),
                                 ToggleButtons::make('metodo_pagamento_id')
+                                    ->live()
                                     ->label('Método do Pagamento')
                                     ->columnSpanFull()
                                     ->options(
@@ -77,35 +89,24 @@ class CaixaForm
                                     ->grouped(),
 
                                 Select::make('cartao_pagamento_id')
+                                    ->columnSpan(2)
                                     ->relationship('bandeiraCartao', 'bandeira')
-                                    // Tornar este campo visível APENAS se o método de pagamento for 'Cartão' (opcional)
                                     ->visible(function ($get) {
-                                        // Pega o NOME do método de pagamento
-                                        $metodoNome = $get('metodoPagamento.nome');
-
-                                        // Se a relação não carregar o nome, use o ID e procure manualmente
-                                        // Se a relação estiver bem definida, o código acima funciona
-                                        return $metodoNome === 'Cartão';
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3]);
                                     }),
 
                                 TextInput::make('autorizacao')
+                                    ->columnSpan(2)
                                     ->label('Nº de Autorização da Transação')
-                                    // Define a visibilidade do campo 'autorizacao'
                                     ->visible(function ($get) {
-                                        // Captura o nome do método de pagamento selecionado.
-                                        // O '.nome' funciona porque o Select acima usa 'metodoPagamento.nome' na relação.
-                                        $metodoNome = $get('metodoPagamento.nome');
-
-                                        // Verifica se o nome está na lista de métodos que exigem autorização.
-                                        return in_array($metodoNome, ['Cartão', 'Pix']);
-
-                                        // Caso você precise usar o ID (mais seguro), use o ID:
-                                        // $metodoId = $get('metodo_pagamento_id'); 
-                                        // return in_array($metodoId, [1, 2]); // Ex: 1 para Cartão, 2 para Pix
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3, 4]);
                                     }),
 
                                 TextInput::make('valor_recebido')
-                                    ->live()
+                                    ->columnSpan(3)
+                                    ->live(true)
                                     ->required()
                                     ->prefix('R$')
                                     ->mask(RawJs::make(<<<'JS'
@@ -130,13 +131,14 @@ class CaixaForm
                                         return number_format((float) $state, 2, ',', '.');
                                     })
                                     ->placeholder('0,00')
-                                    ->afterStateUpdated(function (callable $set, $state, callable $get) {
-                                        // Atualiza o valor_total quando valor_recebido muda
+                                    ->afterStateUpdated(function (callable $set, $state, callable $get, TextInput $component) {
+
                                         $set('valor_total', $state);
+                                        $set('saldo_inicial', $state);
                                     }),
                                 TextInput::make('valor_total')
-                                    ->live()
-                                    ->required()
+                                    ->readOnly()
+                                    ->columnSpan(1)
                                     ->prefix('R$')
                                     ->mask(RawJs::make(<<<'JS'
                                             $money($input, ',', '.', 2)

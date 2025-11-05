@@ -13,6 +13,11 @@ class MetodoPagamentoForm
         return $schema
             ->components([
                 TextInput::make('nome')
+                    ->unique('metodos_pagamentos', 'nome', ignoreRecord: true)
+                    ->validationMessages([
+                        'required' => 'O campo Nome é obrigatório.',
+                        'unique' => 'Este Nome já está em uso.',
+                    ])
                     ->required(),
                 Select::make('taxa_tipo')
                     ->options(['N/A' => 'N/A', 'DESCONTAR' => 'Descontar', 'ACRESCENTAR' => 'Acrescentar'])

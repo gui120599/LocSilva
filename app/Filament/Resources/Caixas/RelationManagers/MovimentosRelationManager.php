@@ -23,6 +23,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Support\RawJs;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -91,8 +92,23 @@ class MovimentosRelationManager extends RelationManager
                 TextColumn::make('descricao')
                     ->searchable(),
                 TextColumn::make('tipo')
-                    ->badge(),
-                TextColumn::make('metodoPagamento.id')
+                    ->badge()
+                    ->icon(fn(string $state) => match ($state) {
+                        'entrada' => Heroicon::PlusCircle,
+                        'saida' => Heroicon::MinusCircle,
+                    })
+                    ->color(fn(string $state) => match ($state) {
+                        'entrada' => 'success',
+                        'saida' => 'danger',
+                        default => 'secondary',
+                    }),
+                TextColumn::make('metodoPagamento.nome')
+                    ->icon(fn(string $state) => match ($state) {
+                        'Dinheiro' => Heroicon::Banknotes,
+                        'Cartão de Crédito' => Heroicon::CreditCard,
+                        'Cartão de Débito' => Heroicon::CreditCard,
+                        'Pix' => Heroicon::QrCode
+                    })
                     ->searchable(),
                 TextColumn::make('cartao_pagamento_id')
                     ->numeric()
@@ -137,17 +153,40 @@ class MovimentosRelationManager extends RelationManager
                 CreateAction::make()
                     ->schema([
                         Section::make()
-                        ->columns(4)
+                            ->columns(5)
                             ->schema([
-                                Select::make('user_id')
-                                    ->relationship('user', 'name')
-                                    ->default(auth()->user()->id),
-                                Select::make('tipo')
-                                    ->hidden()
-                                    ->options(['entrada' => 'Entrada', 'saida' => 'Saida'])
+                                ToggleButtons::make('tipo')
+                                    ->live()
+                                    ->columnSpanFull()
+                                    ->grouped()
+                                    ->label('Tipo de Movimentação')
+                                    ->options([
+                                        'entrada' => 'Entrada',
+                                        'saida' => 'Saida',
+                                    ])
+                                    ->icons([
+                                        'entrada' => Heroicon::PlusCircle,
+                                        'saida' => Heroicon::MinusCircle,
+                                    ])
+                                    ->colors([
+                                        'entrada' => 'success',
+                                        'saida' => 'danger',
+                                    ])
                                     ->default('entrada')
-                                    ->required(),
+                                    ->required()
+                                    ->columnSpanFull(),
+                                TextInput::make('descricao')
+                                    ->placeholder('Descreva a movimentação do caixa')
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Select::make('user_id')
+                                    ->label('Responsável')
+                                    ->relationship('user', 'name')
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->default(auth()->user()->id),
                                 ToggleButtons::make('metodo_pagamento_id')
+                                    ->live()
                                     ->label('Método do Pagamento')
                                     ->columnSpanFull()
                                     ->options(
@@ -165,41 +204,100 @@ class MovimentosRelationManager extends RelationManager
                                     ->grouped(),
 
                                 Select::make('cartao_pagamento_id')
+                                    ->columnSpan(1)
                                     ->relationship('bandeiraCartao', 'bandeira')
-                                    // Tornar este campo visível APENAS se o método de pagamento for 'Cartão' (opcional)
                                     ->visible(function ($get) {
-                                        // Pega o NOME do método de pagamento
-                                        $metodoNome = $get('metodoPagamento.nome');
-
-                                        // Se a relação não carregar o nome, use o ID e procure manualmente
-                                        // Se a relação estiver bem definida, o código acima funciona
-                                        return $metodoNome === 'Cartão';
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3]);
                                     }),
 
                                 TextInput::make('autorizacao')
+                                    ->columnSpan(4)
                                     ->label('Nº de Autorização da Transação')
-                                    // Define a visibilidade do campo 'autorizacao'
                                     ->visible(function ($get) {
-                                        // Captura o nome do método de pagamento selecionado.
-                                        // O '.nome' funciona porque o Select acima usa 'metodoPagamento.nome' na relação.
-                                        $metodoNome = $get('metodoPagamento.nome');
-
-                                        // Verifica se o nome está na lista de métodos que exigem autorização.
-                                        return in_array($metodoNome, ['Cartão', 'Pix']);
-
-                                        // Caso você precise usar o ID (mais seguro), use o ID:
-                                        // $metodoId = $get('metodo_pagamento_id'); 
-                                        // return in_array($metodoId, [1, 2]); // Ex: 1 para Cartão, 2 para Pix
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3, 4]);
                                     }),
+                                TextInput::make('valor_pago')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->columnSpan(2)
+                                    ->live()
+                                    ->required()
+                                    ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+        $money($input, ',', '.', 2)
+    JS))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state); // mantém só números e vírgula
+                                        return (float) str_replace(',', '.', $value);  // troca vírgula por ponto
+                                    })
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00')
+                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                                        $valorPago = str_replace(['R$', '.', ' '], '', $get('valor_pago') ?? '0');
+                                        $valorPago = (float) str_replace(',', '.', $valorPago);
+
+                                        $valorRecebido = str_replace(['R$', '.', ' '], '', $get('valor_recebido') ?? '0');
+                                        $valorRecebido = (float) str_replace(',', '.', $valorRecebido);
+
+                                        $troco = max($valorRecebido - $valorPago, 0);
+
+                                        $set('troco', $troco);
+                                        $set('valor_total', $valorPago);
+                                    }),
+
                                 TextInput::make('valor_recebido')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->columnSpan(2)
+                                    ->live()
                                     ->required()
-                                    ->numeric()
-                                    ->default(0.0),
+                                    ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+        $money($input, ',', '.', 2)
+    JS))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state);
+                                        return (float) str_replace(',', '.', $value);
+                                    })
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00')
+                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                                        $valorPago = str_replace(['R$', '.', ' '], '', $get('valor_pago') ?? '0');
+                                        $valorPago = (float) str_replace(',', '.', $valorPago);
+
+                                        $valorRecebido = str_replace(['R$', '.', ' '], '', $get('valor_recebido') ?? '0');
+                                        $valorRecebido = (float) str_replace(',', '.', $valorRecebido);
+
+                                        $troco = max($valorRecebido - $valorPago, 0);
+
+                                        $set('troco', $troco);
+                                        $set('valor_total', $valorPago);
+                                    }),
+
+                                TextInput::make('troco')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->readOnly()
+                                    ->columnSpan(1)
+                                    ->live()
+                                    ->required()
+                                    ->prefix('R$')
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00'),
+
                                 TextInput::make('valor_total')
-                                ->readonly()
-                                    ->required()
-                                    ->numeric()
-                                    ->default(0.0),
+                                    ->readOnly()
+                                    ->columnSpanFull()
+                                    ->prefix('R$')
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00'),
+
                             ]),
                     ]),
                 AssociateAction::make()

@@ -16,7 +16,6 @@ class Caixa extends Model
         'user_id',
         'data_abertura',
         'data_fechamento',
-        'saldo_inicial',
         'status',
         'observacoes',
     ];
@@ -24,7 +23,6 @@ class Caixa extends Model
     protected $casts = [
         'data_abertura' => 'datetime',
         'data_fechamento' => 'datetime',
-        'saldo_inicial' => 'decimal:2',
     ];
 
     /**
