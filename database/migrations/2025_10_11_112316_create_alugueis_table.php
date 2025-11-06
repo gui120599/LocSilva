@@ -20,11 +20,11 @@ return new class extends Migration {
             $table->date('data_devolucao_real')->nullable();
             $table->integer('quantidade_diarias');
             $table->decimal('valor_diaria', 10, 2)->default(0);
-            $table->decimal('valor_acrescimo', 10, 2)->default(0);
-            $table->decimal('valor_desconto', 10, 2)->default(0);
-            $table->decimal('valor_total', 10, 2)->default(0);
-            $table->decimal('valor_pago', 10, 2)->default(0);
-            $table->decimal('valor_saldo', 10, 2)->default(0);
+            $table->decimal('valor_acrescimo_aluguel', 10, 2)->default(0);
+            $table->decimal('valor_desconto_aluguel', 10, 2)->default(0);
+            $table->decimal('valor_total_aluguel', 10, 2)->default(0);
+            $table->decimal('valor_pago_aluguel', 10, 2)->default(0);
+            $table->decimal('valor_saldo_aluguel', 10, 2)->default(0);
             $table->enum('status', ['ativo', 'pendente', 'finalizado', 'cancelado'])->default('ativo');
             $table->text('observacoes')->nullable();
             

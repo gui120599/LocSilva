@@ -21,9 +21,11 @@ class Aluguel extends Model
         'data_devolucao_real',
         'quantidade_diarias',
         'valor_diaria',
-        'valor_acrescimo',
-        'valor_desconto',
-        'valor_total',
+        'valor_acrescimo_aluguel',
+        'valor_desconto_aluguel',
+        'valor_total_aluguel',
+        'valor_pago_aluguel',
+        'valor_saldo_aluguel',
         'status',
         'observacoes',
     ];
@@ -33,9 +35,11 @@ class Aluguel extends Model
         'data_devolucao_prevista' => 'date',
         'data_devolucao_real' => 'date',
         'valor_diaria' => 'decimal:2',
-        'valor_acrescimo' => 'decimal:2',
-        'valor_desconto' => 'decimal:2',
-        'valor_total' => 'decimal:2',
+        'valor_acrescimo_aluguel' => 'decimal:2',
+        'valor_desconto_aluguel' => 'decimal:2',
+        'valor_total_aluguel' => 'decimal:2',
+        'valor_pago_aluguel' => 'decimal:2',
+        'valor_saldo_aluguel' => 'decimal:2',
     ];
 
     /**

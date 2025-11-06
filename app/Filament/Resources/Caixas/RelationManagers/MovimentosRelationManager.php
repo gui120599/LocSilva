@@ -88,8 +88,11 @@ class MovimentosRelationManager extends RelationManager
                 TextColumn::make('aluguel.id')
                     ->searchable(),
                 TextColumn::make('user.name')
+                ->label('Responsável')
+                    ->toggleable()
                     ->searchable(),
                 TextColumn::make('descricao')
+                    ->toggleable()
                     ->searchable(),
                 TextColumn::make('tipo')
                     ->badge()
@@ -101,7 +104,8 @@ class MovimentosRelationManager extends RelationManager
                         'entrada' => 'success',
                         'saida' => 'danger',
                         default => 'secondary',
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('metodoPagamento.nome')
                     ->icon(fn(string $state) => match ($state) {
                         'Dinheiro' => Heroicon::Banknotes,
@@ -109,29 +113,37 @@ class MovimentosRelationManager extends RelationManager
                         'Cartão de Débito' => Heroicon::CreditCard,
                         'Pix' => Heroicon::QrCode
                     })
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('cartao_pagamento_id')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('autorizacao')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('valor_pago')
-                    ->numeric()
-                    ->sortable(),
+                    ->money('BRL', decimalPlaces:2)
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('valor_recebido')
-                    ->numeric()
-                    ->sortable(),
+                    ->money('BRL', decimalPlaces:2)
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('valor_acrescimo')
-                    ->numeric()
-                    ->sortable(),
+                    ->money('BRL', decimalPlaces:2)
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('valor_desconto')
-                    ->numeric()
-                    ->sortable(),
+                    ->money('BRL', decimalPlaces:2)
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('troco')
-                    ->numeric()
-                    ->sortable(),
+                    ->money('BRL', decimalPlaces:2)
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('valor_total')
-                    ->numeric()
+                    ->money('BRL', decimalPlaces:2)
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -292,10 +304,19 @@ class MovimentosRelationManager extends RelationManager
                                     ->placeholder('0,00'),
 
                                 TextInput::make('valor_total')
-                                    ->readOnly()
+                                    ->readOnly(fn($get) => $get('tipo') === 'entrada')
                                     ->columnSpanFull()
                                     ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+                                        $money($input, ',', '.', 2)
+                                    JS))
                                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state);
+                                        return (float) str_replace(',', '.', $value);
+                                    })
                                     ->placeholder('0,00'),
 
                             ]),

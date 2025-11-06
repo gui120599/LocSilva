@@ -20,23 +20,21 @@ class MovimentoCaixa extends Model
         'metodo_pagamento_id',
         'cartao_pagamento_id',
         'autorizacao',
-        'valor_pago',
-        'valor_recebido',
-        'valor_acrescimo',
-        'valor_desconto',
-        'troco',
-        'valor_total',
-        'data_movimento',
+        'valor_pago_movimento',
+        'valor_recebido_movimento',
+        'valor_acrescimo_movimento',
+        'valor_desconto_movimento',
+        'troco_movimento',
+        'valor_total_movimento',
     ];
 
     protected $casts = [
-        'valor_pago' => 'decimal:2',
-        'valor_recebido' => 'decimal:2',
-        'valor_acrescimo' => 'decimal:2',
-        'valor_desconto' => 'decimal:2',
-        'troco' => 'decimal:2',
-        'valor_total' => 'decimal:2',
-        'data_movimento' => 'datetime',
+        'valor_pago_movimento' => 'decimal:2',
+        'valor_recebido_movimento' => 'decimal:2',
+        'valor_acrescimo_movimento' => 'decimal:2',
+        'valor_desconto_movimento' => 'decimal:2',
+        'troco_movimento' => 'decimal:2',
+        'valor_total_movimento' => 'decimal:2',
     ];
 
     /**
@@ -116,6 +114,6 @@ class MovimentoCaixa extends Model
      */
     public function calcularValorTotal(): float
     {
-        return $this->valor_pago + $this->valor_acrescimo - $this->valor_desconto;
+        return $this->valor_pago_movimento + $this->valor_acrescimo_movimento - $this->valor_desconto_movimento;
     }
 }

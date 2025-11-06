@@ -29,6 +29,35 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+
+        DB::table('carretas')->insert([
+            [
+                'identificacao' => 'Carreta 1',
+                'foto' => 'fotos_carretas/01K9DBJ80E5MKQTRM3S0XY4EC1.jpg',
+                'tipo' => 'carreta',
+                'marca' => 'Marca A',
+                'modelo' => 'Modelo X',
+                'ano' => 2020,
+                'placa' => 'ABC-1234',
+                'capacidade_carga' => 15000,
+                'valor_diaria' => 300,
+                'valor_venda' => 80000,
+                'status' => 'disponivel',
+            ],
+            [
+                'identificacao' => 'Reboque 1',
+                'foto' => 'fotos_carretas/01K9DBK06S4VYV7CGHWN06HH80.jpg',
+                'tipo' => 'reboque',
+                'marca' => 'Marca B',
+                'modelo' => 'Modelo Y',
+                'ano' => 2019,
+                'placa' => 'DEF-5678',
+                'capacidade_carga' => 10000,
+                'valor_diaria' => 200,
+                'valor_venda' => 50000,
+                'status' => 'disponivel',
+            ],
+        ]);
     }
 
     /**

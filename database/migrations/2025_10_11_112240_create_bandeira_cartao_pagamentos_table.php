@@ -18,6 +18,29 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+
+        DB::table('bandeira_cartao_pagamentos')->insert([
+            [
+                'bandeira' => 'Visa',
+                'cnpj_crendeciador' => null,
+            ],
+            [
+                'bandeira' => 'Mastercard',
+                'cnpj_crendeciador' => null,
+            ],
+            [
+                'bandeira' => 'AmericanExpress',
+                'cnpj_crendeciador' => null,
+            ],
+            [
+                'bandeira' => 'Elo',
+                'cnpj_crendeciador' => null,
+            ],
+            [
+                'bandeira' => 'Hipercard',
+                'cnpj_crendeciador' => null,
+            ],
+        ]);
     }
 
     /**

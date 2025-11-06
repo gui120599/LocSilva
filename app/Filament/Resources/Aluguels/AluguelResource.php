@@ -11,6 +11,8 @@ use App\Filament\Resources\Caixas\RelationManagers\MovimentosRelationManager;
 use App\Models\Aluguel;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -57,7 +59,7 @@ class AluguelResource extends Resource
 
         // 2. Chama o método estático 'where' na classe do modelo,
         //    que retorna o Builder, e encadeia o método de instância 'count()'
-        return $modelClass::whereIn('status', ['ativo','pendente'])->count();
+        return $modelClass::whereIn('status', ['ativo', 'pendente'])->count();
     }
     public static function getNavigationBadgeColor(): ?string
     {
@@ -66,10 +68,12 @@ class AluguelResource extends Resource
 
         // 2. Chama o método estático 'where' na classe do modelo,
         //    que retorna o Builder, e encadeia o método de instância 'count()'
-        return $modelClass::whereIn('status', ['ativo','pendente'])->count() >= 0 ? 'success' : null;
+        return $modelClass::whereIn('status', ['ativo', 'pendente'])->count() >= 0 ? 'success' : null;
     }
     public static function getNavigationBadgeTooltip(): ?string
     {
         return 'Alugueis ativos/pendentes';
     }
+
+    
 }

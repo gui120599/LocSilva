@@ -20,12 +20,12 @@ return new class extends Migration {
             $table->foreignId('metodo_pagamento_id')->constrained('metodos_pagamentos');
             $table->foreignId('cartao_pagamento_id')->nullable()->constrained('bandeira_cartao_pagamentos');
             $table->string('autorizacao')->nullable();
-            $table->decimal('valor_pago', 10, 2)->default(0);
-            $table->decimal('valor_recebido', 10, 2)->default(0);
-            $table->decimal('valor_acrescimo', 10, 2)->default(0);
-            $table->decimal('valor_desconto', 10, 2)->default(0);
-            $table->decimal('troco', 10, 2)->default(0);
-            $table->decimal('valor_total', 10, 2)->default(0);
+            $table->decimal('valor_pago_movimento', 10, 2)->default(0);
+            $table->decimal('valor_recebido_movimento', 10, 2)->default(0);
+            $table->decimal('valor_acrescimo_movimento', 10, 2)->default(0);
+            $table->decimal('valor_desconto_movimento', 10, 2)->default(0);
+            $table->decimal('troco_movimento', 10, 2)->default(0);
+            $table->decimal('valor_total_movimento', 10, 2)->default(0);
 
             $table->timestamps();
             $table->softDeletes();

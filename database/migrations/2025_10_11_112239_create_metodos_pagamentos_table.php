@@ -19,6 +19,33 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
         });
+
+        DB::table('metodos_pagamentos')->insert([
+            [
+                'nome' => 'Dinheiro',
+                'taxa_tipo' => 'N/A',
+                'taxa_percentual' => 0,
+                'descricao_nfe' => 'cash',
+            ],
+            [
+                'nome' => 'Cartão de Crédito',
+                'taxa_tipo' => 'ACRESCENTAR',
+                'taxa_percentual' => 0,
+                'descricao_nfe' => 'creditCard',
+            ],
+            [
+                'nome' => 'Cartão de Débito',
+                'taxa_tipo' => 'N/A',
+                'taxa_percentual' => 0,
+                'descricao_nfe' => 'debitCard',
+            ],
+            [
+                'nome' => 'PIX',
+                'taxa_tipo' => 'N/A',
+                'taxa_percentual' => 0,
+                'descricao_nfe' => 'InstantPayment',
+            ],
+        ]);
     }
 
     /**
