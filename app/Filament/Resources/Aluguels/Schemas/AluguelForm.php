@@ -251,6 +251,35 @@ class AluguelForm
                             DatePicker::make('data_retirada')
                                 ->label('Data de Retirada')
                                 ->default(now())
+                                ->live()
+                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                    $dataDevolucao = $get('data_devolucao_prevista');
+                                    $valorDiaria = floatval($get('valor_diaria') ?? 0);
+
+                                    if ($dataDevolucao && $state) {
+                                        $inicio = Carbon::parse($state);
+                                        $fim = Carbon::parse($dataDevolucao);
+
+                                        // diferença em dias (se for 0 ou negativo, considera 1 diária)
+                                        $dias = $inicio->diffInDays($fim);
+                                        $diasValidos = $dias > 0 ? $dias : 1;
+
+                                        $set('quantidade_diarias', $diasValidos);
+
+                                        // 1. Calcule o valor total
+                                        $valorTotal = $valorDiaria * $diasValidos;
+
+                                        // 2. Formate o valor para string com separadores brasileiros
+                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
+                        
+                                        // 3. Defina o estado com a string formatada
+                                        $set('valor_total_aluguel', $valorFormatado);
+                                    } else {
+                                        // se algum dos dois campos estiver vazio, zera quantidade/total (opcional)
+                                        $set('quantidade_diarias', null);
+                                        $set('valor_total_aluguel', '0,00');
+                                    }
+                                })
                                 ->required(),
                             DatePicker::make('data_devolucao_prevista')
                                 ->label('Data de Prevista para Devolução')
@@ -282,13 +311,17 @@ class AluguelForm
                                         $set('valor_total_aluguel', '0,00');
                                     }
                                 })
+                                ->validationMessages([
+                                    'after_or_equal' => 'A Data de Devolução Prevista deve ser igual ou posterior à Data de Retirada.',
+                                    'required' => 'A Data de Devolução Prevista é obrigatória.',
+                                ])
+                                ->minDate(fn (Get $get) => $get('data_retirada'))
                                 ->required(),
                         ]),
                     Step::make('Valores e Pagamento')
                         ->icon('heroicon-o-currency-dollar')
                         ->description('Defina os valores e registre os pagamentos')
-                        ->schema([
-                        Grid::make(3)
+                        ->columns(3)
                             ->schema([
                                 Section::make('Resumo Financeiro')
                                     ->columnSpan(1)
@@ -320,7 +353,28 @@ class AluguelForm
                                         // Acréscimos
                                         TextInput::make('valor_acrescimo_aluguel')
                                             ->label('Acréscimos')
-                                            ->numeric()
+                                            ->mask(RawJs::make(<<<'JS'
+                                                $money($input, ',', '.', 2)
+                                            JS))
+                                            ->dehydrateStateUsing(function ($state) {
+                                                // Remove formatação antes de salvar
+                                                if (!$state)
+                                                    return 0;
+
+                                                // Remove R$, pontos e converte vírgula em ponto
+                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                $value = str_replace(',', '.', $value);
+
+                                                return (float) $value;
+                                            })
+                                            ->formatStateUsing(function ($state) {
+                                                // Formata para exibição
+                                                if (!$state)
+                                                    return '0,00';
+
+                                                return number_format((float) $state, 2, ',', '.');
+                                            })
+                                            ->placeholder('0,00')
                                             ->prefix('R$')
                                             ->minValue(0)
                                             ->step(0.01)
@@ -332,7 +386,28 @@ class AluguelForm
                                         // Descontos
                                         TextInput::make('valor_desconto_aluguel')
                                             ->label('Descontos')
-                                            ->numeric()
+                                            ->mask(RawJs::make(<<<'JS'
+                                                    $money($input, ',', '.', 2)
+                                                JS))
+                                            ->dehydrateStateUsing(function ($state) {
+                                                // Remove formatação antes de salvar
+                                                if (!$state)
+                                                    return 0;
+
+                                                // Remove R$, pontos e converte vírgula em ponto
+                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                $value = str_replace(',', '.', $value);
+
+                                                return (float) $value;
+                                            })
+                                            ->formatStateUsing(function ($state) {
+                                                // Formata para exibição
+                                                if (!$state)
+                                                    return '0,00';
+
+                                                return number_format((float) $state, 2, ',', '.');
+                                            })
+                                            ->placeholder('0,00')
                                             ->prefix('R$')
                                             ->minValue(0)
                                             ->step(0.01)
@@ -348,6 +423,17 @@ class AluguelForm
                                             ->prefix('R$')
                                             ->disabled()
                                             ->dehydrated()
+                                            ->dehydrateStateUsing(function ($state) {
+                                                // Remove formatação antes de salvar
+                                                if (!$state)
+                                                    return 0;
+
+                                                // Remove R$, pontos e converte vírgula em ponto
+                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                $value = str_replace(',', '.', $value);
+
+                                                return (float) $value;
+                                            })
                                             ->extraAttributes(['class' => 'font-bold text-lg'])
                                             ->helperText('Total do aluguel'),
                                         
@@ -358,19 +444,37 @@ class AluguelForm
                                                 TextInput::make('valor_pago_aluguel')
                                                     ->label('Total Pago')
                                                     ->prefix('R$')
-                                                    ->readOnly()
+                                                    ->dehydrateStateUsing(function ($state) {
+                                                        // Remove formatação antes de salvar
+                                                        if (!$state)
+                                                            return 0;
+
+                                                        // Remove R$, pontos e converte vírgula em ponto
+                                                        $value = str_replace(['R$', '.', ' '], '', $state);
+                                                        $value = str_replace(',', '.', $value);
+
+                                                        return (float) $value;
+                                                    })
                                                     ->default('0,00')
-                                                    ->extraAttributes(['class' => 'text-green-600 font-semibold'])
-                                                    ->dehydrated(false),
+                                                    ->extraAttributes(['class' => 'text-green-600 font-semibold']),
                                                 
                                                 // Saldo Restante (calculado)
                                                 TextInput::make('valor_saldo_aluguel')
                                                     ->label('Saldo Restante')
                                                     ->prefix('R$')
-                                                    ->readOnly()
+                                                    ->dehydrateStateUsing(function ($state) {
+                                                        // Remove formatação antes de salvar
+                                                        if (!$state)
+                                                            return 0;
+
+                                                        // Remove R$, pontos e converte vírgula em ponto
+                                                        $value = str_replace(['R$', '.', ' '], '', $state);
+                                                        $value = str_replace(',', '.', $value);
+
+                                                        return (float) $value;
+                                                    })
                                                     ->default('0,00')
-                                                    ->extraAttributes(['class' => 'text-red-600 font-bold text-lg'])
-                                                    ->dehydrated(false),
+                                                    ->extraAttributes(['class' => 'text-red-600 font-bold text-lg']),
                                             ])
                                             ->columnSpanFull(),
                                     ]),
@@ -397,9 +501,8 @@ class AluguelForm
                                                     : 'Novo Pagamento'
                                             )
                                             ->defaultItems(1)
+                                            ->columns(4)
                                             ->schema([
-                                                Grid::make(4)
-                                                    ->schema([
                                                         
                                                         // Descrição
                                                         TextInput::make('descricao')
@@ -460,11 +563,32 @@ class AluguelForm
                                                         TextInput::make('valor_pago_movimento')
                                                             ->label('Valor Pago')
                                                             ->required()
-                                                            ->numeric()
                                                             ->prefix('R$')
                                                             ->minValue(0)
                                                             ->step(0.01)
-                                                            ->live()
+                                                           ->mask(RawJs::make(<<<'JS'
+                                                                $money($input, ',', '.', 2)
+                                                            JS))
+                                                            ->dehydrateStateUsing(function ($state) {
+                                                                // Remove formatação antes de salvar
+                                                                if (!$state)
+                                                                    return 0;
+
+                                                                // Remove R$, pontos e converte vírgula em ponto
+                                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                                $value = str_replace(',', '.', $value);
+
+                                                                return (float) $value;
+                                                            })
+                                                            ->formatStateUsing(function ($state) {
+                                                                // Formata para exibição
+                                                                if (!$state)
+                                                                    return '0,00';
+
+                                                                return number_format((float) $state, 2, ',', '.');
+                                                            })
+                                                            ->placeholder('0,00')
+                                                            ->live(true)
                                                             ->afterStateUpdated(function (Set $set, Get $get, $state) {
                                                                 $valorPago = floatval($state ?? 0);
                                                                 $metodoPagamentoId = $get('metodo_pagamento_id');
@@ -495,11 +619,32 @@ class AluguelForm
                                                         // Valor Recebido (para quando precisa dar troco)
                                                         TextInput::make('valor_recebido_movimento')
                                                             ->label('Valor Recebido')
-                                                            ->numeric()
                                                             ->prefix('R$')
                                                             ->minValue(0)
                                                             ->step(0.01)
-                                                            ->live()
+                                                            ->mask(RawJs::make(<<<'JS'
+                                                                $money($input, ',', '.', 2)
+                                                            JS))
+                                                            ->dehydrateStateUsing(function ($state) {
+                                                                // Remove formatação antes de salvar
+                                                                if (!$state)
+                                                                    return 0;
+
+                                                                // Remove R$, pontos e converte vírgula em ponto
+                                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                                $value = str_replace(',', '.', $value);
+
+                                                                return (float) $value;
+                                                            })
+                                                            ->formatStateUsing(function ($state) {
+                                                                // Formata para exibição
+                                                                if (!$state)
+                                                                    return '0,00';
+
+                                                                return number_format((float) $state, 2, ',', '.');
+                                                            })
+                                                            ->placeholder('0,00')
+                                                            ->live(true)
                                                             ->afterStateUpdated(function (Set $set, Get $get, $state) {
                                                                 $valorRecebido = floatval($state ?? 0);
                                                                 $valorPago = floatval($get('valor_pago_movimento') ?? 0);
@@ -508,10 +653,10 @@ class AluguelForm
                                                                     $troco = $valorRecebido - $valorPago;
                                                                     $set('troco_movimento', $troco);
                                                                 } else {
-                                                                    $set('troco_movimentogit', 0);
+                                                                    $set('troco_movimento', 0);
                                                                 }
                                                             })
-                                                            ->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1) // Só para dinheiro
+                                                            //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1) // Só para dinheiro
                                                             ->helperText('Valor que está sendo entregue pelo cliente')
                                                             ->columnSpan(2),
                                                         
@@ -522,7 +667,7 @@ class AluguelForm
                                                             ->prefix('R$')
                                                             ->readOnly()
                                                             ->default(0)
-                                                            ->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1)
+                                                            //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1)
                                                             ->extraAttributes(['class' => 'text-red-600 font-semibold'])
                                                             ->helperText('Valor que será devolvido ao cliente')
                                                             ->columnSpan(1),
@@ -558,7 +703,6 @@ class AluguelForm
                                                             ->readOnly()
                                                             ->extraAttributes(['class' => 'font-bold text-lg text-green-600'])
                                                             ->columnSpan(2),
-                                                    ]),
                                             ])
                                             ->live()
                                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
@@ -567,7 +711,6 @@ class AluguelForm
                                             }),
                                     ]),
                             ]),
-                    ])
 
                 ]),
                 Section::make()

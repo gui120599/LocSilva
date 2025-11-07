@@ -4,6 +4,8 @@ use App\Models\Carreta;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
+Route::get('/print-aluguel/{id}',[\App\Http\Controllers\AluguelController::class, 'printAluguel'])->name('print-aluguel');
+
 Route::get('/documento/print/{id}', function ($id) {
     $registro = Carreta::find($id); // 👈 Ajuste o Model
     //dd($registro);
@@ -26,10 +28,10 @@ Route::get('/documento/print/{id}', function ($id) {
         }
 
         // Outros tipos faz download
-        //return Storage::disk('public')->download($registro->documento); 
+        //return Storage::disk('public')->download($registro->documento);
         abort(404);
     }
 
-   
+
 
 })->middleware('auth')->name('documento.print');

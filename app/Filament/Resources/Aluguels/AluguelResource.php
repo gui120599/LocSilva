@@ -5,17 +5,17 @@ namespace App\Filament\Resources\Aluguels;
 use App\Filament\Resources\Aluguels\Pages\CreateAluguel;
 use App\Filament\Resources\Aluguels\Pages\EditAluguel;
 use App\Filament\Resources\Aluguels\Pages\ListAluguels;
+use App\Filament\Resources\Aluguels\Pages\ViewAluguel;
 use App\Filament\Resources\Aluguels\Schemas\AluguelForm;
+use App\Filament\Resources\Aluguels\Schemas\AluguelInfolist;
 use App\Filament\Resources\Aluguels\Tables\AluguelsTable;
-use App\Filament\Resources\Caixas\RelationManagers\MovimentosRelationManager;
 use App\Models\Aluguel;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+
 
 class AluguelResource extends Resource
 {
@@ -25,7 +25,7 @@ class AluguelResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Alugueis';
 
-    protected static ?string $recordTitleAttribute = 'data_retirada';
+    protected static ?string $recordTitleAttribute = 'id';
 
     public static function form(Schema $schema): Schema
     {
@@ -50,6 +50,7 @@ class AluguelResource extends Resource
             'index' => ListAluguels::route('/'),
             'create' => CreateAluguel::route('/create'),
             'edit' => EditAluguel::route('/{record}/edit'),
+            'aluguel' => Pages\Aluguel::route('/{record}/recibo'),
         ];
     }
     public static function getNavigationBadge(): ?string
@@ -75,5 +76,5 @@ class AluguelResource extends Resource
         return 'Alugueis ativos/pendentes';
     }
 
-    
+
 }

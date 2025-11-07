@@ -6,6 +6,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -71,13 +72,13 @@ class AluguelsTable
                 TextColumn::make('valor_diaria')
                     ->money('BRL')
                     ->sortable(),
-                TextColumn::make('valor_total')
+                TextColumn::make('valor_total_aluguel')
                     ->money('BRL')
                     ->sortable(),
-                TextColumn::make('valor_pago')
+                TextColumn::make('valor_pago_aluguel')
                     ->money('BRL')
                     ->sortable(),
-                TextColumn::make('valor_saldo')
+                TextColumn::make('valor_saldo_aluguel')
                     ->money('BRL')
                     ->sortable(),
                 TextColumn::make('created_at')
@@ -122,6 +123,10 @@ class AluguelsTable
             ->recordActions([
                 /*EditAction::make()
                     ->visible(fn($record) => $record->status === 'ativo'),*/
+
+                Action::make('Recibo')
+                    ->url(fn($record)=> \App\Filament\Resources\Aluguels\AluguelResource::getUrl('aluguel',['record' =>$record])),
+
                 Action::make('finalizar')
                     ->label('Finalizar')
                     ->icon('heroicon-o-check-circle')
@@ -154,7 +159,7 @@ class AluguelsTable
                         ]);
 
                         // O Observer vai liberar a carreta automaticamente
-            
+
                         Notification::make()
                             ->success()
                             ->title('Aluguel finalizado com sucesso!')
@@ -180,7 +185,7 @@ class AluguelsTable
                         $record->cancelar($data['motivo']);
 
                         // O Observer vai liberar a carreta automaticamente
-            
+
                         Notification::make()
                             ->success()
                             ->title('Aluguel cancelado')
