@@ -23,10 +23,13 @@ class Aluguel extends Page
     {
         return [
             Action::make('print')
-            ->label('Print')
-            ->icon('heroicon-s-printer')
-            ->requiresConfirmation(true)
-            ->url(route('print-aluguel',['id' => $this->record]))
+                ->label('Imprimir Contrato')
+                ->icon('heroicon-s-printer')
+                ->color('primary')
+                // A CHAVE: Passar o registro ($record) para a rota dentro do closure
+                ->url(fn(): string => route('print-aluguel', ['id' => $this->record]))
+                ->openUrlInNewTab()
+            // REMOVIDO: requiresConfirmation(true)
         ];
     }
 

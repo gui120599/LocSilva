@@ -87,8 +87,8 @@
                         <dd>R$ {{ number_format($aluguel->valor_desconto_aluguel ?? 0.00, 2, ',', '.') }}</dd>
                     </div>
                     <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
-                        <dt class="text-gray-800">VALOR TOTAL DO ALUGUEL:</dt>
-                        <dd class="text-secondary-600">R$ {{ number_format($aluguel->valor_total_aluguel ?? 0.00, 2, ',', '.') }}</dd>
+                        <dt class="text-gray-800 text-sm">VALOR TOTAL:</dt>
+                        <dd class="text-gray-600">R$ {{ number_format($aluguel->valor_total_aluguel ?? 0.00, 2, ',', '.') }}</dd>
                     </div>
                 </dl>
             </div>

@@ -16,7 +16,9 @@ class AluguelController extends Controller
     {
         $aluguel = Aluguel::find($id);
 
-        $pdf = \PDF::loadView('pdf.aluguel', ['aluguel' => $aluguel]);
-        return $pdf->stream();
+        /*$pdf = \PDF::loadView('pdf.aluguel', ['aluguel' => $aluguel]);
+        return $pdf->stream();*/
+
+        return view('aluguel',['aluguel' => $aluguel]);
     }
 }
