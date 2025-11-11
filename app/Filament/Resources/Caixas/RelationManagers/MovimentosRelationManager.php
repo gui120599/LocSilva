@@ -38,45 +38,163 @@ class MovimentosRelationManager extends RelationManager
     {
         return $schema
             ->components([
-                Select::make('aluguel_id')
-                    ->relationship('aluguel', 'id'),
-                Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->required(),
-                TextInput::make('descricao'),
-                Select::make('tipo')
-                    ->options(['entrada' => 'Entrada', 'saida' => 'Saida'])
-                    ->default('entrada')
-                    ->required(),
-                Select::make('metodo_pagamento_id')
-                    ->relationship('metodoPagamento', 'id')
-                    ->required(),
-                TextInput::make('cartao_pagamento_id')
-                    ->numeric(),
-                TextInput::make('autorizacao'),
-                TextInput::make('valor_pago')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('valor_recebido')
-                    ->required()
-                    ->numeric()
-                    ->default(0.0),
-                TextInput::make('valor_acrescimo')
-                    ->required()
-                    ->numeric()
-                    ->default(0.0),
-                TextInput::make('valor_desconto')
-                    ->required()
-                    ->numeric()
-                    ->default(0.0),
-                TextInput::make('troco')
-                    ->required()
-                    ->numeric()
-                    ->default(0.0),
-                TextInput::make('valor_total')
-                    ->required()
-                    ->numeric()
-                    ->default(0.0),
+                 Section::make()
+                    ->columnSpanFull()
+                    ->columns(5)
+                            ->schema([
+                                ToggleButtons::make('tipo')
+                                    ->live()
+                                    ->columnSpanFull()
+                                    ->grouped()
+                                    ->label('Tipo de Movimentação')
+                                    ->options([
+                                        'entrada' => 'Entrada',
+                                        'saida' => 'Saida',
+                                    ])
+                                    ->icons([
+                                        'entrada' => Heroicon::PlusCircle,
+                                        'saida' => Heroicon::MinusCircle,
+                                    ])
+                                    ->colors([
+                                        'entrada' => 'success',
+                                        'saida' => 'danger',
+                                    ])
+                                    ->default('entrada')
+                                    ->required()
+                                    ->columnSpanFull(),
+                                TextInput::make('descricao')
+                                    ->placeholder('Descreva a movimentação do caixa')
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Select::make('user_id')
+                                    ->label('Responsável')
+                                    ->relationship('user', 'name')
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->default(auth()->user()->id),
+                                ToggleButtons::make('metodo_pagamento_id')
+                                    ->live()
+                                    ->label('Método do Pagamento')
+                                    ->columnSpanFull()
+                                    ->options(
+                                        function () {
+                                            return MetodoPagamento::pluck('nome', 'id')->toArray();
+                                        }
+                                    )
+                                    ->icons([
+                                        1 => Heroicon::Banknotes,
+                                        2 => Heroicon::CreditCard,
+                                        3 => Heroicon::CreditCard,
+                                        4 => Heroicon::QrCode
+                                    ])
+                                    ->default(1)
+                                    ->grouped(),
+
+                                Select::make('cartao_pagamento_id')
+                                    ->columnSpan(1)
+                                    ->relationship('bandeiraCartao', 'bandeira')
+                                    ->visible(function ($get) {
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3]);
+                                    }),
+
+                                TextInput::make('autorizacao')
+                                    ->columnSpan(4)
+                                    ->label('Nº de Autorização da Transação')
+                                    ->visible(function ($get) {
+                                        $metodoId = $get('metodo_pagamento_id');
+                                        return in_array($metodoId, [2, 3, 4]);
+                                    }),
+                                TextInput::make('valor_pago_movimento')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->columnSpan(2)
+                                    ->live()
+                                    ->required()
+                                    ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+        $money($input, ',', '.', 2)
+    JS))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state); // mantém só números e vírgula
+                                        return (float) str_replace(',', '.', $value);  // troca vírgula por ponto
+                                    })
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00')
+                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                                        $valorPago = str_replace(['R$', '.', ' '], '', $get('valor_pago') ?? '0');
+                                        $valorPago = (float) str_replace(',', '.', $valorPago);
+
+                                        $valorRecebido = str_replace(['R$', '.', ' '], '', $get('valor_recebido') ?? '0');
+                                        $valorRecebido = (float) str_replace(',', '.', $valorRecebido);
+
+                                        $troco = max($valorRecebido - $valorPago, 0);
+
+                                        $set('troco', $troco);
+                                        $set('valor_total', $valorPago);
+                                    }),
+
+                                TextInput::make('valor_recebido_movimento')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->columnSpan(2)
+                                    ->live()
+                                    ->required()
+                                    ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+        $money($input, ',', '.', 2)
+    JS))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state);
+                                        return (float) str_replace(',', '.', $value);
+                                    })
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00')
+                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                                        $valorPago = str_replace(['R$', '.', ' '], '', $get('valor_pago') ?? '0');
+                                        $valorPago = (float) str_replace(',', '.', $valorPago);
+
+                                        $valorRecebido = str_replace(['R$', '.', ' '], '', $get('valor_recebido') ?? '0');
+                                        $valorRecebido = (float) str_replace(',', '.', $valorRecebido);
+
+                                        $troco = max($valorRecebido - $valorPago, 0);
+
+                                        $set('troco', $troco);
+                                        $set('valor_total', $valorPago);
+                                    }),
+
+                                TextInput::make('troco_movimento')
+                                    ->visible(fn($get) => $get('tipo') === 'entrada')
+                                    ->disabled(fn($get) => $get('tipo') === 'saida')
+                                    ->readOnly()
+                                    ->columnSpan(1)
+                                    ->live()
+                                    ->required()
+                                    ->prefix('R$')
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->placeholder('0,00'),
+
+                                TextInput::make('valor_total_movimento')
+                                    ->readOnly(fn($get) => $get('tipo') === 'entrada')
+                                    ->columnSpanFull()
+                                    ->prefix('R$')
+                                    ->mask(RawJs::make(<<<'JS'
+                                        $money($input, ',', '.', 2)
+                                    JS))
+                                    ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (!$state)
+                                            return 0;
+                                        $value = preg_replace('/[^\d,]/', '', $state);
+                                        return (float) str_replace(',', '.', $value);
+                                    })
+                                    ->placeholder('0,00'),
+
+                            ]),
             ]);
     }
 
@@ -122,27 +240,27 @@ class MovimentosRelationManager extends RelationManager
                 TextColumn::make('autorizacao')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('valor_pago')
+                TextColumn::make('valor_pago_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('valor_recebido')
+                TextColumn::make('valor_recebido_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('valor_acrescimo')
+                TextColumn::make('valor_acrescimo_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('valor_desconto')
+                TextColumn::make('valor_desconto_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('troco')
+                TextColumn::make('troco_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('valor_total')
+                TextColumn::make('valor_total_movimento')
                     ->money('BRL', decimalPlaces:2)
                     ->sortable(),
                 TextColumn::make('created_at')
@@ -230,7 +348,7 @@ class MovimentosRelationManager extends RelationManager
                                         $metodoId = $get('metodo_pagamento_id');
                                         return in_array($metodoId, [2, 3, 4]);
                                     }),
-                                TextInput::make('valor_pago')
+                                TextInput::make('valor_pago_movimento')
                                     ->visible(fn($get) => $get('tipo') === 'entrada')
                                     ->disabled(fn($get) => $get('tipo') === 'saida')
                                     ->columnSpan(2)
@@ -261,7 +379,7 @@ class MovimentosRelationManager extends RelationManager
                                         $set('valor_total', $valorPago);
                                     }),
 
-                                TextInput::make('valor_recebido')
+                                TextInput::make('valor_recebido_movimento')
                                     ->visible(fn($get) => $get('tipo') === 'entrada')
                                     ->disabled(fn($get) => $get('tipo') === 'saida')
                                     ->columnSpan(2)
@@ -292,7 +410,7 @@ class MovimentosRelationManager extends RelationManager
                                         $set('valor_total', $valorPago);
                                     }),
 
-                                TextInput::make('troco')
+                                TextInput::make('troco_movimento')
                                     ->visible(fn($get) => $get('tipo') === 'entrada')
                                     ->disabled(fn($get) => $get('tipo') === 'saida')
                                     ->readOnly()
@@ -303,7 +421,7 @@ class MovimentosRelationManager extends RelationManager
                                     ->formatStateUsing(fn($state) => number_format((float) $state, 2, ',', '.'))
                                     ->placeholder('0,00'),
 
-                                TextInput::make('valor_total')
+                                TextInput::make('valor_total_movimento')
                                     ->readOnly(fn($get) => $get('tipo') === 'entrada')
                                     ->columnSpanFull()
                                     ->prefix('R$')
@@ -323,7 +441,7 @@ class MovimentosRelationManager extends RelationManager
                     ]),
                 AssociateAction::make()
                     ->label('Associar Movimento')
-                    ->recordSelectSearchColumns(['descricao', 'id'])
+                    ->recordSelectSearchColumns(['descricao', 'id','valor_total_movimento'])
                     ->multiple()
                     ->preloadRecordSelect(),
             ])

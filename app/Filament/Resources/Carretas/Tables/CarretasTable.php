@@ -93,7 +93,6 @@ class CarretasTable
                 TrashedFilter::make(),
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->default('disponivel')
                     ->options([
                         'disponivel' => 'Disponível',
                         'alugada' => 'Alugada',

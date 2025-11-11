@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Aluguels\Tables;
 
 use App\Models\Aluguel;
+use App\Models\Carreta;
 use App\Models\MetodoPagamento;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -150,7 +151,7 @@ class AluguelsTable
                     ->label('Finalizar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn($record) => $record->status === 'ativo')
+                    ->visible(fn($record) => in_array($record->status, ['ativo', 'pendente']))
                     ->requiresConfirmation()
                     ->modalHeading('Finalizar Aluguel')
                     ->modalDescription(function (Aluguel $record): string {
@@ -165,6 +166,9 @@ class AluguelsTable
                     })
                     ->form(fn(Aluguel $record): array => [
                         DatePicker::make('data_devolucao_real')
+                            ->disabled(fn($record) => in_array($record->status, ['pendente']))
+                            ->default($record->data_devolucao_real)
+                            ->dehydrated()
                             ->label('Data de Devolução')
                             ->live()
                             ->afterStateUpdated(function (Set $set, Get $get, $state) use ($record) {
@@ -200,21 +204,17 @@ class AluguelsTable
 
                             })
                             ->required()
-                            //->default(now())
                             ->maxDate(now()),
+
+                        Hidden::make('status')
+                            ->default($record->status),
 
                         Grid::make()
                             ->columns(3)
-                            ->visible(function () use ($record): bool {
-                                // Calcula o saldo restante (Total - Pago)
-                                $saldoRestante = $record->valor_total_aluguel - $record->movimentos->sum('valor_total_movimento');
-                                // Retorna true (visível) se o saldo for maior que zero (usando 0.01 para segurança de floats)
-                                return $saldoRestante > 0.01;
-                            })
                             ->components([
                                 Section::make('Resumo Financeiro')
                                     ->columnSpan(1)
-                                    ->collapsed()
+                                    ->collapsible(fn($record) => in_array($record->status, ['ativo']))
                                     ->icon('heroicon-o-calculator')
                                     ->description('Valores do aluguel')
                                     ->schema([
@@ -397,29 +397,31 @@ class AluguelsTable
                                     ]),
                                 Section::make('Registrar Pagamentos')
                                     ->columnSpan(2)
-                                    ->collapsed()
+                                     ->visible(function () use ($record): bool {
+                                        // Calcula o saldo restante (Total - Pago)
+                                        $saldoRestante = $record->valor_total_aluguel - $record->movimentos->sum('valor_total_movimento');
+                                        // Retorna true (visível) se o saldo for maior que zero (usando 0.01 para segurança de floats)
+                                        return $saldoRestante > 0.01;
+                                    })
+                                    ->collapsible(fn($record) => in_array($record->status, ['ativo']))
                                     ->icon('heroicon-o-banknotes')
                                     ->description('Adicione os pagamentos recebidos')
                                     ->headerActions([
                                         // Você pode adicionar actions aqui se necessário
                                     ])
                                     ->schema([
-
+                                        
                                         Repeater::make('movimentos')
                                             ->relationship()
-                                            ->label('')
+                                            ->default($record->movimentos->toArray())
+                                            ->collapsed()
                                             ->addActionLabel('Adicionar Pagamento')
-                                            ->deletable(true)
-                                            ->reorderable(false)
-                                            ->collapsible()
-                                            ->cloneable()
                                             ->itemLabel(
                                                 fn(array $state): ?string =>
                                                 isset($state['valor_total_movimento'])
                                                 ? 'Pagamento: R$ ' . number_format((float) $state['valor_total_movimento'], 2, ',', '.')
                                                 : 'Novo Pagamento'
                                             )
-                                            ->defaultItems(1)
                                             ->columns(4)
                                             ->schema([
 
@@ -486,9 +488,6 @@ class AluguelsTable
                                                     ->required()
                                                     ->prefix('R$')
                                                     ->minValue(0)
-                                                    ->mask(RawJs::make(<<<'JS'
-                                                                $money($input, ',', '.', 2)
-                                                            JS))
                                                     ->dehydrateStateUsing(function ($state) {
                                                         // Remove formatação antes de salvar
                                                         if (!$state)
@@ -540,11 +539,6 @@ class AluguelsTable
                                                 TextInput::make('valor_recebido_movimento')
                                                     ->label('Valor Recebido')
                                                     ->prefix('R$')
-                                                    ->minValue(0)
-                                                    ->step(0.01)
-                                                    ->mask(RawJs::make(<<<'JS'
-                                                                $money($input, ',', '.', 2)
-                                                            JS))
                                                     ->dehydrateStateUsing(function ($state) {
                                                         // Remove formatação antes de salvar
                                                         if (!$state)
@@ -589,9 +583,9 @@ class AluguelsTable
                                                     //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1)
                                                     ->extraAttributes(['class' => 'text-red-600 font-semibold'])
                                                     ->helperText('Valor que será devolvido ao cliente')
-                                                    ->columnSpan(1),
+                                                    ->columnSpan(2),
 
-                                                // Acréscimo (taxa)
+                                                /*// Acréscimo (taxa)
                                                 TextInput::make('valor_acrescimo_movimento')
                                                     ->label('Acréscimo')
                                                     ->numeric()
@@ -611,7 +605,7 @@ class AluguelsTable
                                                     ->default(0)
                                                     ->visible(fn(Get $get) => floatval($get('valor_desconto') ?? 0) > 0)
                                                     ->helperText('Taxa do método de pagamento')
-                                                    ->columnSpan(1),
+                                                    ->columnSpan(1),*/
 
                                                 // Valor Total do Movimento
                                                 TextInput::make('valor_total_movimento')
@@ -649,13 +643,13 @@ class AluguelsTable
                                             }),
                                     ]),
                             ]),
+                        
                     ])
                     ->modalWidth(function (Aluguel $record): Width {
 
-                        if ($record->valor_saldo_aluguel > 0.01) {
+                        
                             return Width::FourExtraLarge;
-                        }
-                        return Width::Small;
+                        
 
                     })
                     ->action(function (Aluguel $record, array $data) {
@@ -664,20 +658,6 @@ class AluguelsTable
                         DB::beginTransaction();
 
                         try {
-
-
-                            // 2️⃣ Atualizar a data de devolução
-                            $record->update([
-                                'data_devolucao_real' => $data['data_devolucao_real'],
-                                'quantidade_diarias' => $data['qunatidade_diarias'],
-                                'valor_diaria' => $data['valor_diaria'],
-                                'valor_acrescimo_aluguel' => $data['valor_acrescimo_aluguel'],
-                                'valor_desconto_aluguel' => $data['valor_desconto_aluguel'],
-                                'valor_total_aluguel' => $data['valor_total_aluguel'],
-                                'valor_pago_aluguel' => $data['valor_pago_aluguel'],
-                                'valor_saldo_aluguel' => $data['valor_saldo_aluguel'],
-                            ]);
-
 
                             // 3️⃣ RE-CALCULAR os valores após o movimento
                             $valorPagoAtualizado = $record->movimentos->sum('valor_total_movimento');
@@ -693,24 +673,39 @@ class AluguelsTable
                                 $novoStatus = 'finalizado';
                             }
 
-                            // Atualiza campos finais do aluguel
-                            $record->forceFill([
+                            // 2️⃣ Atualizar a data de devolução
+                            $record->update([
                                 'status' => $novoStatus,
-                            ])->save();
+                                'data_devolucao_real' => $data['data_devolucao_real'],
+                                'quantidade_diarias' => $data['quantidade_diarias'],
+                                'valor_diaria' => $data['valor_diaria'],
+                                'valor_acrescimo_aluguel' => $data['valor_acrescimo_aluguel'],
+                                'valor_desconto_aluguel' => $data['valor_desconto_aluguel'],
+                                'valor_total_aluguel' => $data['valor_total_aluguel'],
+                                'valor_pago_aluguel' => $data['valor_pago_aluguel'],
+                                'valor_saldo_aluguel' => $data['valor_saldo_aluguel'],
+                            ]);
+
+                            // Liberar a carreta
+                            $carreta = Carreta::find($record->carreta_id);
+
+                            $carreta->update([
+                                'status' =>'disponivel'
+                            ]);
 
                             DB::commit();
 
 
-                            /*// ✅ Mensagem de feedback
+                            // ✅ Mensagem de feedback
                             Notification::make()
                                 ->success()
                                 ->title("Aluguel atualizado com sucesso!")
                                 ->body(
-                                    $valorMovimento > 0
-                                    ? "Recebido R$ " . number_format($valorMovimento, 2, ',', '.') . ". Status agora: {$novoStatus}."
+                                    $data['valor_pago_aluguel'] > 0
+                                    ? "Recebido R$ " . number_format($data['valor_pago_aluguel'], 2, ',', '.') . ". Status agora: {$novoStatus}."
                                     : "Nenhum pagamento recebido. Status agora: {$novoStatus}."
                                 )
-                                ->send();*/
+                                ->send();
 
                         } catch (\Exception $e) {
 
@@ -720,7 +715,7 @@ class AluguelsTable
                             Notification::make()
                                 ->danger()
                                 ->title('Erro ao atualizar o aluguel')
-                                ->body('Ocorreu um erro. Os dados foram revertidos.')
+                                ->body('Ocorreu um erro. Os dados foram revertidos.' . $e->getMessage())
                                 ->send();
                         }
                     }),
@@ -797,7 +792,7 @@ class AluguelsTable
      */
     protected static function atualizarTotaisPagamento(array $movimentos, Set $set, Get $get): void
     {
-        $totalPago = floatval($get('valor_pago_aluguel')) ?? 0;
+        $totalPago = floatval($get('valor_total_movimento_antigo')) ?? 0;
 
         if (is_array($movimentos)) {
             foreach ($movimentos as $movimento) {
@@ -819,7 +814,7 @@ class AluguelsTable
      */
     protected static function atualizarTotaisPagamento_2(Set $set, Get $get): void
     {
-        $totalPago = floatval($get('valor_pago_aluguel')) ?? 0;
+        $totalPago = floatval($get('valor_total_movimento_antigo')) ?? 0;
 
         $valorTotal = floatval($get('valor_total_aluguel') ?? 0);
         $saldo = max(0, $valorTotal - $totalPago);

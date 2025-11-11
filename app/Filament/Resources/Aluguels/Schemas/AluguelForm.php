@@ -246,70 +246,22 @@ class AluguelForm
                                 ]),
                         ]),
                     Step::make('Datas')
-                        ->columns(2)
+                        ->columns(3)
                         ->schema([
+                            
                             DatePicker::make('data_retirada')
                                 ->label('Data de Retirada')
                                 ->default(now())
                                 ->live()
-                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                    $dataDevolucao = $get('data_devolucao_prevista');
-                                    $valorDiaria = floatval($get('valor_diaria') ?? 0);
-
-                                    if ($dataDevolucao && $state) {
-                                        $inicio = Carbon::parse($state);
-                                        $fim = Carbon::parse($dataDevolucao);
-
-                                        // diferença em dias (se for 0 ou negativo, considera 1 diária)
-                                        $dias = $inicio->diffInDays($fim);
-                                        $diasValidos = $dias > 0 ? $dias : 1;
-
-                                        $set('quantidade_diarias', $diasValidos);
-
-                                        // 1. Calcule o valor total
-                                        $valorTotal = $valorDiaria * $diasValidos;
-
-                                        // 2. Formate o valor para string com separadores brasileiros
-                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
-                        
-                                        // 3. Defina o estado com a string formatada
-                                        $set('valor_total_aluguel', $valorFormatado);
-                                    } else {
-                                        // se algum dos dois campos estiver vazio, zera quantidade/total (opcional)
-                                        $set('quantidade_diarias', null);
-                                        $set('valor_total_aluguel', '0,00');
-                                    }
+                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                    self::calcularTotais($set, $get);
                                 })
                                 ->required(),
+
                             DatePicker::make('data_devolucao_prevista')
                                 ->label('Data de Prevista para Devolução')
-                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                    $dataRetirada = $get('data_retirada');
-                                    $valorDiaria = floatval($get('valor_diaria') ?? 0);
-
-                                    if ($dataRetirada && $state) {
-                                        $inicio = Carbon::parse($dataRetirada);
-                                        $fim = Carbon::parse($state);
-
-                                        // diferença em dias (se for 0 ou negativo, considera 1 diária)
-                                        $dias = $inicio->diffInDays($fim);
-                                        $diasValidos = $dias > 0 ? $dias : 1;
-
-                                        $set('quantidade_diarias', $diasValidos);
-
-                                        // 1. Calcule o valor total
-                                        $valorTotal = $valorDiaria * $diasValidos;
-
-                                        // 2. Formate o valor para string com separadores brasileiros
-                                        $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
-                        
-                                        // 3. Defina o estado com a string formatada
-                                        $set('valor_total_aluguel', $valorFormatado);
-                                    } else {
-                                        // se algum dos dois campos estiver vazio, zera quantidade/total (opcional)
-                                        $set('quantidade_diarias', null);
-                                        $set('valor_total_aluguel', '0,00');
-                                    }
+                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                    self::calcularTotais($set, $get);
                                 })
                                 ->validationMessages([
                                     'after_or_equal' => 'A Data de Devolução Prevista deve ser igual ou posterior à Data de Retirada.',
@@ -317,6 +269,18 @@ class AluguelForm
                                 ])
                                 ->minDate(fn (Get $get) => $get('data_retirada'))
                                 ->required(),
+
+                            DatePicker::make('data_devolucao_real')
+                                ->visible(fn(string $operation):bool => $operation ==='edit')
+                                ->label('Data da Devolução')
+                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                    self::calcularTotais($set, $get);
+                                })
+                                ->validationMessages([
+                                    'after_or_equal' => 'A Data de Devolução deve ser igual ou posterior à Data de Retirada.',
+                                    'required' => 'A Data de Devolução é obrigatória.',
+                                ])
+                                ->minDate(fn (Get $get) => $get('data_retirada')),
                         ]),
                     Step::make('Valores e Pagamento')
                         ->icon('heroicon-o-currency-dollar')
@@ -482,6 +446,9 @@ class AluguelForm
                                                 TextInput::make('valor_saldo_aluguel')
                                                     ->label('Saldo Restante')
                                                     ->prefix('R$')
+                                                    ->mask(RawJs::make(<<<'JS'
+                                                        $money($input, ',', '.', 2)
+                                                    JS))
                                                     ->dehydrateStateUsing(function ($state) {
                                                         // Remove formatação antes de salvar
                                                         if (!$state)
@@ -493,10 +460,9 @@ class AluguelForm
 
                                                         return (float) $value;
                                                     })
-                                                    ->default('0,00')
                                                     ->extraAttributes(['class' => 'text-red-600 font-bold text-lg']),
-                                            ])
-                                            ->columnSpanFull(),
+                                                    ])
+                                                    ->columnSpanFull(),
                                     ]),
                                 Section::make('Registrar Pagamentos')
                                     ->columnSpan(2)
@@ -569,7 +535,7 @@ class AluguelForm
                                                             ->preload()
                                                             ->visible(fn (Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
                                                             ->required(fn (Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
-                                                            ->columnSpan(2),
+                                                            ->columnSpan(4),
                                                         
                                                         // Número de Autorização (condicional)
                                                         TextInput::make('autorizacao')
@@ -577,7 +543,7 @@ class AluguelForm
                                                             ->placeholder('000000')
                                                             ->maxLength(20)
                                                             ->visible(fn (Get $get) => in_array($get('metodo_pagamento_id'), [2, 3, 4]))
-                                                            ->columnSpan(2),
+                                                            ->columnSpan(4),
                                                         
                                                         // Valor Pago pelo Cliente
                                                         TextInput::make('valor_pago_movimento')
@@ -692,7 +658,7 @@ class AluguelForm
                                                             ->helperText('Valor que será devolvido ao cliente')
                                                             ->columnSpan(1),
                                                         
-                                                        // Acréscimo (taxa)
+                                                        /*// Acréscimo (taxa)
                                                         TextInput::make('valor_acrescimo_movimento')
                                                             ->label('Acréscimo')
                                                             ->numeric()
@@ -713,12 +679,33 @@ class AluguelForm
                                                             ->visible(fn (Get $get) => floatval($get('valor_desconto') ?? 0) > 0)
                                                             ->helperText('Taxa do método de pagamento')
                                                             ->columnSpan(1),
-                                                        
+                                                        */
                                                         // Valor Total do Movimento
                                                         TextInput::make('valor_total_movimento')
                                                             ->label('Total')
                                                             ->required()
-                                                            ->numeric()
+                                                            ->mask(RawJs::make(<<<'JS'
+                                                                $money($input, ',', '.', 2)
+                                                            JS))
+                                                            ->dehydrateStateUsing(function ($state) {
+                                                                // Remove formatação antes de salvar
+                                                                if (!$state)
+                                                                    return 0;
+
+                                                                // Remove R$, pontos e converte vírgula em ponto
+                                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                                $value = str_replace(',', '.', $value);
+
+                                                                return (float) $value;
+                                                            })
+                                                            ->formatStateUsing(function ($state) {
+                                                                // Formata para exibição
+                                                                if (!$state)
+                                                                    return '0,00';
+
+                                                                return number_format((float) $state, 2, ',', '.');
+                                                            })
+                                                            ->placeholder('0,00')
                                                             ->prefix('R$')
                                                             ->readOnly()
                                                             ->extraAttributes(['class' => 'font-bold text-lg text-green-600'])
@@ -739,22 +726,103 @@ class AluguelForm
                     ->collapsed(fn(string $operation): bool => $operation === 'create')
                     ->schema([
                         Select::make('status')
-                            ->hidden()
-                            ->options(['ativo' => 'Ativo', 'finalizado' => 'Finalizado', 'cancelado' => 'Cancelado'])
-                            ->default('ativo')
-                            ->required(),
+                        ->hidden()
+                        ->options([
+                            'ativo' => 'Ativo',
+                            'finalizado' => 'Finalizado',
+                            'pendente' => 'Pendente',
+                            'cancelado' => 'Cancelado',
+                        ])
+                        ->default('ativo')
+                        ->required()
+                        ->afterStateHydrated(function (Set $set, Get $get) {
+                            $dataDevolucao = $get('data_devolucao_real');
+                            $saldo = floatval($get('valor_saldo_aluguel') ?? 0);
+
+                            if ($dataDevolucao && $saldo == 0) {
+                                $set('status', 'finalizado');
+                            } elseif ($dataDevolucao && $saldo > 0) {
+                                $set('status', 'pendente');
+                            } else {
+                                $set('status', 'ativo');
+                            }
+                        })
+                        ->dehydrateStateUsing(function (Get $get) {
+                            $dataDevolucao = $get('data_devolucao_real');
+                            $saldo = floatval($get('valor_saldo_aluguel') ?? 0);
+
+                            if ($dataDevolucao && $saldo == 0) {
+                                return 'finalizado';
+                            }
+
+                            if ($dataDevolucao && $saldo > 0) {
+                                return 'pendente';
+                            }
+
+                            return 'ativo';
+                        }),
+
                         Textarea::make('observacoes')
                             ->columnSpanFull(),
                     ])
 
             ]);
     }
+
+    /**
+     * Calulura totais
+     */
+    protected static function calcularTotais(Set $set, Get $get)
+    {
+        $dataRetirada = $get('data_retirada');
+        $valorDiaria = floatval($get('valor_diaria'));
+
+        // ✅ Prioriza data_devolucao_real se preenchida
+        $dataDevolucaoReal = $get('data_devolucao_real');
+        $dataDevolucaoPrevista = $get('data_devolucao_prevista');
+
+        if ($dataDevolucaoReal) {
+            $dataFim = Carbon::parse($dataDevolucaoReal);
+        } elseif ($dataDevolucaoPrevista) {
+            $dataFim = Carbon::parse($dataDevolucaoPrevista);
+        } else {
+            $dataFim = null;
+        }
+
+        if ($dataRetirada && $dataFim) {
+            $inicio = Carbon::parse($dataRetirada);
+
+            // Calcula diferença de dias
+            $dias = $inicio->diffInDays($dataFim);
+            $diasValidos = $dias > 0 ? $dias : 1;
+
+            $set('quantidade_diarias', $diasValidos);
+
+            // Valor Total
+            $valorTotal = $valorDiaria * $diasValidos;
+
+            // Formata PT-BR
+            $set('valor_total_aluguel', number_format($valorTotal, 2, ',', '.'));
+
+        } else {
+            $set('quantidade_diarias', null);
+            $set('valor_total_aluguel', "0,00");
+        }
+
+        // Atualiza totais
+        self::atualizarTotaisPagamento(
+            $get('movimentos'),
+            $set,
+            $get
+        );
+    }
+
+
     /**
      * Calcula os valores totais do aluguel
      */
     protected static function calcularValores(Set $set, Get $get): void
     {
-        dd($get('valor_diaria'));
         $valorDiaria = floatval($get('valor_diaria') ?? 0);
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
         $valorAcrescimo = floatval($get('valor_acrescimo_aluguel') ?? 0);
@@ -767,6 +835,7 @@ class AluguelForm
         $valorTotal = $subtotal + $valorAcrescimo - $valorDesconto;
 
         $set('valor_total_aluguel', $valorTotal);
+        self::atualizarTotaisPagamento($get('movimentos'),$set,$get);
     }
 
     /**
@@ -788,20 +857,33 @@ class AluguelForm
      */
     protected static function atualizarTotaisPagamento(array $movimentos, Set $set, Get $get): void
     {
-        $totalPago = 0;
+       $totalPago = 0;
 
+        // 1. Calcular o total pago
         if (is_array($movimentos)) {
             foreach ($movimentos as $movimento) {
                 if (isset($movimento['valor_total_movimento'])) {
+                    // Apenas soma, assumindo que os valores internos no Repeater já são números ou strings válidas.
                     $totalPago += floatval($movimento['valor_total_movimento']);
                 }
             }
         }
 
-        $valorTotal = floatval($get('valor_total_aluguel') ?? 0);
-        $saldo = max(0, $valorTotal - $totalPago);
+        // 2. Obter e limpar o Valor Total do Aluguel (Correção para números acima de 1000)
+        
+        
+        // Substitui a vírgula decimal por ponto decimal e converte para float
+        $valorTotal = floatval($get('valor_total_aluguel'));
 
+        // 3. Calcular o saldo
+        $saldo = $valorTotal - $totalPago;
+
+        // 4. Definir os valores formatados para exibição
+        
+        // Valor Pago (Ex: 1.250,00)
         $set('valor_pago_aluguel', number_format($totalPago, 2, ',', '.'));
+        
+        // Saldo (Ex: 250,00)
         $set('valor_saldo_aluguel', number_format($saldo, 2, ',', '.'));
-    }
+        }
 }

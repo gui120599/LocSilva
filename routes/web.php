@@ -4,7 +4,7 @@ use App\Models\Carreta;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::get('/print-aluguel/{id}',[\App\Http\Controllers\AluguelController::class, 'printAluguel'])->name('print-aluguel');
+Route::get('/print-aluguel/{id}',[\App\Http\Controllers\AluguelController::class, 'printAluguel'])->name('print-aluguel')->middleware('auth');
 
 Route::get('/documento/print/{id}', function ($id) {
     $registro = Carreta::find($id); // 👈 Ajuste o Model
