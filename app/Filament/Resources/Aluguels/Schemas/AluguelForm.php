@@ -341,10 +341,30 @@ class AluguelForm
                                         // Valor da Diária (editável)
                                         TextInput::make('valor_diaria')
                                             ->label('Valor da Diária')
+                                            ->mask(RawJs::make(<<<'JS'
+                                                $money($input, ',', '.', 2)
+                                            JS))
+                                            ->dehydrateStateUsing(function ($state) {
+                                                // Remove formatação antes de salvar
+                                                if (!$state)
+                                                    return 0;
+
+                                                // Remove R$, pontos e converte vírgula em ponto
+                                                $value = str_replace(['R$', '.', ' '], '', $state);
+                                                $value = str_replace(',', '.', $value);
+
+                                                return (float) $value;
+                                            })
+                                            ->formatStateUsing(function ($state) {
+                                                // Formata para exibição
+                                                if (!$state)
+                                                    return '0,00';
+
+                                                return number_format((float) $state, 2, ',', '.');
+                                            })
                                             ->required()
-                                            ->live()
+                                            ->live(true)
                                             ->prefix('R$')
-                                            ->numeric()
                                             ->minValue(0)
                                             ->step(0.01)
                                             ->afterStateUpdated(fn ($set, $get) => self::calcularValores($set, $get))
@@ -734,6 +754,7 @@ class AluguelForm
      */
     protected static function calcularValores(Set $set, Get $get): void
     {
+        dd($get('valor_diaria'));
         $valorDiaria = floatval($get('valor_diaria') ?? 0);
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
         $valorAcrescimo = floatval($get('valor_acrescimo_aluguel') ?? 0);

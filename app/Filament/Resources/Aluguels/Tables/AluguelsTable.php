@@ -701,7 +701,7 @@ class AluguelsTable
                             DB::commit();
 
 
-                            // ✅ Mensagem de feedback
+                            /*// ✅ Mensagem de feedback
                             Notification::make()
                                 ->success()
                                 ->title("Aluguel atualizado com sucesso!")
@@ -710,7 +710,7 @@ class AluguelsTable
                                     ? "Recebido R$ " . number_format($valorMovimento, 2, ',', '.') . ". Status agora: {$novoStatus}."
                                     : "Nenhum pagamento recebido. Status agora: {$novoStatus}."
                                 )
-                                ->send();
+                                ->send();*/
 
                         } catch (\Exception $e) {
 
