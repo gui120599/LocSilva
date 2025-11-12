@@ -114,8 +114,11 @@ class ClienteForm
                                 }
                             }),
                         TextInput::make('endereco')
-                            ->columnSpan(3)
+                            ->columnSpan(2)
                             ->label('Logradouro'),
+                        TextInput::make('complemento_endereco')
+                            ->columnSpan(3)
+                            ->label('Complemento'),
                         TextInput::make('bairro')
                             ->columnSpan(2),
                         Select::make('estado')
@@ -123,7 +126,7 @@ class ClienteForm
                             ->preload(false)
                             ->options(IBGEServices::ufs())
                             ->searchable()
-                            ->columnSpan(3),
+                            ->columnSpan(2),
                         Select::make('cidade')
                             ->label('Cidade')
                             ->preload()
@@ -138,7 +141,7 @@ class ClienteForm
                                 // Chama o novo método no seu serviço para buscar as cidades da UF
                                 return IBGEServices::cidadesPorUf($uf);
                             })
-                            ->columnSpan(3),
+                            ->columnSpan(2),
                     ]),
                 Section::make()
                     ->description('Observações do cliente')

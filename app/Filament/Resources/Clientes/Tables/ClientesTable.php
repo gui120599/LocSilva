@@ -40,6 +40,9 @@ class ClientesTable
                 TextColumn::make('endereco')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('complemento_endereco')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('bairro')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
