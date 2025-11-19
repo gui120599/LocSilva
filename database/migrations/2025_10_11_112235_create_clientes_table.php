@@ -34,8 +34,8 @@ return new class extends Migration {
             [
                 'nome' => 'Cliente Exemplo',
                 'data_nascimento' => '1990-01-01',
-                'cpf_cnpj' => '123.456.789-00',
-                'telefone' => '(11) 91234-5678',
+                'cpf_cnpj' => '12345678900',
+                'telefone' => '11912345678',
                 'email' => '',
             ],
         ]);

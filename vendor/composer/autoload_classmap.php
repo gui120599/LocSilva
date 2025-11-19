@@ -62,6 +62,7 @@ return array(
     'App\\Helper\\FormatHelper' => $baseDir . '/app/Helper/FormatHelper.php',
     'App\\Http\\Controllers\\AluguelController' => $baseDir . '/app/Http/Controllers/AluguelController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
+    'App\\Http\\Middleware\\Authenticate' => $baseDir . '/app/Http/Middleware/Authenticate.php',
     'App\\Models\\Aluguel' => $baseDir . '/app/Models/Aluguel.php',
     'App\\Models\\BandeiraCartaoPagamento' => $baseDir . '/app/Models/BandeiraCartaoPagamento.php',
     'App\\Models\\Caixa' => $baseDir . '/app/Models/Caixa.php',

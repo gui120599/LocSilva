@@ -8,6 +8,7 @@ use App\Models\MetodoPagamento;
 use App\Services\IBGEServices;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\ModalTableSelect;
@@ -29,6 +30,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
+use Filament\Support\Enums\TextSize;
 
 class AluguelForm
 {
@@ -121,6 +123,27 @@ class AluguelForm
                                                     TextInput::make('email')
                                                         ->email(),
                                                 ]),
+                                             Section::make()
+                                                ->description('Documentos do CLiente')
+                                                ->icon('heroicon-s-paper-clip')
+                                                ->columns(2)
+                                                ->schema([
+                                                    FileUpload::make('documento')
+                                                        ->disk('public')
+                                                        ->directory('documentos_clientes')
+                                                        ->maxSize(2048)
+                                                        ->hint('Tamanho máximo: 2MB')
+                                                        ->downloadable()
+                                                        ->openable(),
+                                                    FileUpload::make('nota_promissoria')
+                                                        ->label('Nota Promssória')
+                                                        ->disk('public')
+                                                        ->directory('promissorias_clientes')
+                                                        ->maxSize(2048)
+                                                        ->hint('Tamanho máximo: 2MB')
+                                                        ->downloadable()
+                                                        ->openable(),
+                                                ]),
                                             Section::make()
                                                 ->description('Endereço do cliente')
                                                 ->icon('heroicon-s-map-pin')
@@ -155,6 +178,9 @@ class AluguelForm
                                                     TextInput::make('endereco')
                                                         ->columnSpan(3)
                                                         ->label('Logradouro'),
+                                                    TextInput::make('complemento_endereco')
+                                                        ->columnSpan(3)
+                                                        ->label('Complemento'),
                                                     TextInput::make('bairro')
                                                         ->columnSpan(2),
                                                     Select::make('estado')
@@ -200,7 +226,7 @@ class AluguelForm
                             Section::make()
                                 ->description('Selecione a Carreta/Reboque para o aluguel')
                                 ->icon('heroicon-s-document-text')
-                                ->columns(2)
+                                ->columns(3)
                                 ->columnSpan(1)
                                 ->schema([
                                     ModalTableSelect::make('carreta_id')
@@ -218,6 +244,7 @@ class AluguelForm
                                                 $set('carreta.foto', $carreta->foto);
                                                 $set('carreta.identificacao', $carreta->identificacao);
                                                 $set('carreta.status', $carreta->status);
+                                                $set('carreta.placa', $carreta->placa);
                                             }
                                         })
                                         ->tableConfiguration(CarretasTable::class)
@@ -226,12 +253,14 @@ class AluguelForm
                                             'required' => 'Selecione uma Carreta ou Reboque para prosseguir com o Aluguel.'
                                         ]),
                                     Section::make()
+                                        ->columns(2)
+                                        ->columnSpan('2')
                                         ->description('Detalhes da Carreta/Reboque')
                                         ->schema([
                                             TextEntry::make('carreta.identificacao')
                                                 ->label('Nº de Identificação'),
                                             TextEntry::make('carreta.status')
-                                                ->label('Status da Carreta/Reboque')
+                                                ->label('Status')
                                                 ->badge()
                                                 ->color(fn(string $state): string => match ($state) {
                                                     'disponivel' => 'success',
@@ -239,8 +268,13 @@ class AluguelForm
                                                     'alugada' => 'danger',
                                                     default => 'secondary',
                                                 }),
+                                            TextEntry::make('carreta.placa')
+                                                ->label('Placa')
+                                                ->size(TextSize::Large)
+                                                ->badge()
+                                                ->color('secondary'),
                                             ImageEntry::make('carreta.foto')
-                                                ->label('Imagem da Carreta/Reboque')
+                                                ->label('Imagem')
                                                 ->disk('public'),
                                         ])
                                 ]),
@@ -249,8 +283,9 @@ class AluguelForm
                         ->columns(3)
                         ->schema([
                             
-                            DatePicker::make('data_retirada')
+                            DateTimePicker::make('data_retirada')
                                 ->label('Data de Retirada')
+                                ->seconds(false)
                                 ->default(now())
                                 ->live()
                                 ->afterStateUpdated(function (Get $get, Set $set) {
@@ -258,8 +293,9 @@ class AluguelForm
                                 })
                                 ->required(),
 
-                            DatePicker::make('data_devolucao_prevista')
+                            DateTimePicker::make('data_devolucao_prevista')
                                 ->label('Data de Prevista para Devolução')
+                                ->seconds(false)
                                 ->afterStateUpdated(function (Get $get, Set $set) {
                                     self::calcularTotais($set, $get);
                                 })
@@ -270,8 +306,9 @@ class AluguelForm
                                 ->minDate(fn (Get $get) => $get('data_retirada'))
                                 ->required(),
 
-                            DatePicker::make('data_devolucao_real')
+                            DateTimePicker::make('data_devolucao_real')
                                 ->visible(fn(string $operation):bool => $operation ==='edit')
+                                ->seconds(false)
                                 ->label('Data da Devolução')
                                 ->afterStateUpdated(function (Get $get, Set $set) {
                                     self::calcularTotais($set, $get);
@@ -777,10 +814,10 @@ class AluguelForm
         $dataRetirada = $get('data_retirada');
         $valorDiaria = floatval($get('valor_diaria'));
 
-        // ✅ Prioriza data_devolucao_real se preenchida
         $dataDevolucaoReal = $get('data_devolucao_real');
         $dataDevolucaoPrevista = $get('data_devolucao_prevista');
 
+        // Prioriza devolução real
         if ($dataDevolucaoReal) {
             $dataFim = Carbon::parse($dataDevolucaoReal);
         } elseif ($dataDevolucaoPrevista) {
@@ -790,32 +827,50 @@ class AluguelForm
         }
 
         if ($dataRetirada && $dataFim) {
+
             $inicio = Carbon::parse($dataRetirada);
 
-            // Calcula diferença de dias
-            $dias = $inicio->diffInDays($dataFim);
-            $diasValidos = $dias > 0 ? $dias : 1;
+            // Diferença TOTAL em minutos
+            $minutos = $inicio->diffInMinutes($dataFim);
 
-            $set('quantidade_diarias', $diasValidos);
+            // 1 diária = 1440 minutos (24h)
+            $minutosPorDiaria = 1440;
 
-            // Valor Total
-            $valorTotal = $valorDiaria * $diasValidos;
+            // Calcula quantas diárias completas
+            $dias = intdiv($minutos, $minutosPorDiaria);
 
-            // Formata PT-BR
+            // Verifica minutos restantes
+            $resto = $minutos % $minutosPorDiaria;
+
+            // Se o resto > 20 minutos → cobra mais 1 diária
+            if ($resto > 20) {
+                $dias++;
+            }
+
+            // Garante no mínimo 1 diária
+            if ($dias <= 0) $dias = 1;
+
+            // Atualiza campo quantidade_diarias
+            $set('quantidade_diarias', $dias);
+
+            // Calcula valor total
+            $valorTotal = $valorDiaria * $dias;
+
             $set('valor_total_aluguel', number_format($valorTotal, 2, ',', '.'));
-
-        } else {
+        } 
+        else {
             $set('quantidade_diarias', null);
             $set('valor_total_aluguel', "0,00");
         }
 
-        // Atualiza totais
+        // Atualizar totais pagamento
         self::atualizarTotaisPagamento(
             $get('movimentos'),
             $set,
             $get
         );
     }
+
 
 
     /**

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('clientes', function (Blueprint $table) {
-            $table->string('complemento_endereco')->nullable()->after('endereco');
+            $table->string('documento')->nullable()->after('cpf_cnpj');
+            $table->string('nota_promissoria')->nullable()->after('documento');
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('clientes', function (Blueprint $table) {
-            $table->dropColumn('complemento_endereco')->change();
+            $table->dropColumn('documento')->change();
+            $table->dropColumn('nota_promissoria')->change();
         });
     }
 };

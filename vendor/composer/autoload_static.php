@@ -876,6 +876,7 @@ class ComposerStaticInit769a7987de9d1a2978fe70e1d6972a66
         'App\\Helper\\FormatHelper' => __DIR__ . '/../..' . '/app/Helper/FormatHelper.php',
         'App\\Http\\Controllers\\AluguelController' => __DIR__ . '/../..' . '/app/Http/Controllers/AluguelController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Http\\Middleware\\Authenticate' => __DIR__ . '/../..' . '/app/Http/Middleware/Authenticate.php',
         'App\\Models\\Aluguel' => __DIR__ . '/../..' . '/app/Models/Aluguel.php',
         'App\\Models\\BandeiraCartaoPagamento' => __DIR__ . '/../..' . '/app/Models/BandeiraCartaoPagamento.php',
         'App\\Models\\Caixa' => __DIR__ . '/../..' . '/app/Models/Caixa.php',

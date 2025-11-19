@@ -31,9 +31,9 @@ class Aluguel extends Model
     ];
 
     protected $casts = [
-        'data_retirada' => 'date',
-        'data_devolucao_prevista' => 'date',
-        'data_devolucao_real' => 'date',
+        'data_retirada' => 'datetime',
+        'data_devolucao_prevista' => 'datetime',
+        'data_devolucao_real' => 'datetime',
         'valor_diaria' => 'decimal:2',
         'valor_acrescimo_aluguel' => 'decimal:2',
         'valor_desconto_aluguel' => 'decimal:2',

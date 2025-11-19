@@ -12,6 +12,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -165,46 +166,68 @@ class AluguelsTable
                         return 'Informe a data real de devolução.';
                     })
                     ->form(fn(Aluguel $record): array => [
-                        DatePicker::make('data_devolucao_real')
+                        DateTimePicker::make('data_devolucao_real')
                             ->disabled(fn($record) => in_array($record->status, ['pendente']))
                             ->default($record->data_devolucao_real)
                             ->dehydrated()
                             ->label('Data de Devolução')
                             ->live()
                             ->afterStateUpdated(function (Set $set, Get $get, $state) use ($record) {
+
                                 $dataRetirada = $record->data_retirada;
                                 $valorDiaria = floatval($record->valor_diaria ?? 0);
 
                                 if ($dataRetirada && $state) {
+
                                     $inicio = Carbon::parse($dataRetirada);
                                     $fim = Carbon::parse($state);
 
-                                    // diferença em dias (se for 0 ou negativo, considera 1 diária)
-                                    $dias = $inicio->diffInDays($fim);
-                                    $diasValidos = $dias > 0 ? $dias : 1;
+                                    // Diferença total em minutos
+                                    $minutos = $inicio->diffInMinutes($fim);
 
-                                    $set('quantidade_diarias', $diasValidos);
+                                    // 1 diária = 1440 minutos (24h)
+                                    $minutosPorDiaria = 1440;
 
-                                    // 1. Calcule o valor total
-                                    $valorTotal = $valorDiaria * $diasValidos;
+                                    // Diárias completas
+                                    $dias = intdiv($minutos, $minutosPorDiaria);
 
-                                    // 2. Formate o valor para string com separadores brasileiros
-                                    $valorFormatado = number_format((float) $valorTotal, 2, ',', '.'); // Ex: '80.000,00'
-                    
-                                    // 3. Defina o estado com a string formatada
+                                    // Resto de minutos após remover as 24h completas
+                                    $resto = $minutos % $minutosPorDiaria;
+
+                                    // Tolerância de 20 minutos → só conta nova diária se passar disso
+                                    if ($resto > 20) {
+                                        $dias++;
+                                    }
+
+                                    // Garante pelo menos 1 diária
+                                    if ($dias <= 0) {
+                                        $dias = 1;
+                                    }
+
+                                    // Set quantidade de diárias
+                                    $set('quantidade_diarias', $dias);
+
+                                    // Calcula valor total
+                                    $valorTotal = $valorDiaria * $dias;
+
+                                    // Formata no padrão brasileiro
+                                    $valorFormatado = number_format($valorTotal, 2, ',', '.');
+
+                                    // Atribui o valor formatado
                                     $set('valor_total_aluguel', $valorFormatado);
 
+                                    // Recalcula totais de pagamentos
                                     self::atualizarTotaisPagamento_2($set, $get);
-
-                                } else {
-                                    // se algum dos dois campos estiver vazio, zera quantidade/total (opcional)
+                                }
+                                else {
+                                    // Se não tiver datas válidas, zera
                                     $set('quantidade_diarias', null);
                                     $set('valor_total_aluguel', '0,00');
                                 }
-
                             })
                             ->required()
                             ->maxDate(now()),
+
 
                         Hidden::make('status')
                             ->default($record->status),
@@ -753,6 +776,7 @@ class AluguelsTable
                 ]),*/
             ]);
     }
+
     /**
      * Calcula os valores totais do aluguel
      */

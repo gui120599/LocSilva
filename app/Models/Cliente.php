@@ -14,6 +14,8 @@ class Cliente extends Model
         'data_nascimento',
         'foto',
         'cpf_cnpj',
+        'documento',
+        'nota_promissoria',
         'telefone',
         'email',
         'endereco',

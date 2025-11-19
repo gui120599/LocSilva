@@ -83,6 +83,27 @@ class ClienteForm
                             ->email(),
                     ]),
                 Section::make()
+                    ->description('Documentos do CLiente')
+                    ->icon('heroicon-s-paper-clip')
+                    ->columns(2)
+                    ->schema([
+                        FileUpload::make('documento')
+                            ->disk('public')
+                            ->directory('documentos_clientes')
+                            ->maxSize(2048)
+                            ->hint('Tamanho máximo: 2MB')
+                            ->downloadable()
+                            ->openable(),
+                        FileUpload::make('nota_promissoria')
+                            ->label('Nota Promssória')
+                            ->disk('public')
+                            ->directory('promissorias_clientes')
+                            ->maxSize(2048)
+                            ->hint('Tamanho máximo: 2MB')
+                            ->downloadable()
+                            ->openable(),
+                    ]),
+                Section::make()
                     ->description('Endereço do cliente')
                     ->icon('heroicon-s-map-pin')
                     ->columns(6)
