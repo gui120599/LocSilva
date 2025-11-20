@@ -774,7 +774,10 @@ class AluguelsTable
                 /*BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),*/
-            ]);
+            ])
+            ->persistFiltersInSession()
+            ->persistSortInSession()
+            ->persistSearchInSession();
     }
 
     /**
