@@ -213,8 +213,8 @@
                         <dt>(-)Desconto:</dt>
                         <dd>R$ {{ number_format($aluguel->valor_desconto_aluguel ?? 0.0, 2, ',', '.') }}</dd>
                     </div>
-                    <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
-                        <dt class="text-gray-800">VALOR TOTAL DO ALUGUEL:</dt>
+                    <div class="flex justify-between font-bold text-xs pt-2 border-t border-gray-200">
+                        <dt class="text-gray-800">VALOR TOTAL:</dt>
                         <dd class="text-green-600">R$
                             {{ number_format($aluguel->valor_total_aluguel ?? 0.0, 2, ',', '.') }}
                         </dd>
@@ -273,9 +273,9 @@
             </div>
         </div>
 
-        <footer class="mt-8 pt-4 border-t border-gray-100 text-center">
+        <!--<footer class="mt-8 pt-4 border-t border-gray-100 text-center">
             <p class="text-sm text-gray-400">Este é um documento interno.</p>
-        </footer>
+        </footer>-->
 
     </div>
     <script>

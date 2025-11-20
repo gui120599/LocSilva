@@ -121,7 +121,7 @@ class AluguelsTable
                 SelectFilter::make('status')
                     ->multiple()
                     ->label('Status')
-                    ->default(['ativo', 'pendente'])
+                    //->default(['ativo', 'pendente'])
                     ->options([
                         'ativo' => 'Ativo',
                         'finalizado' => 'Finalizado',
