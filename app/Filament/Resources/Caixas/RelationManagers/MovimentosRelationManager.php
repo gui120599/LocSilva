@@ -465,9 +465,9 @@ class MovimentosRelationManager extends RelationManager
             ->toolbarActions([
                 BulkActionGroup::make([
                     DissociateBulkAction::make(),
-                    DeleteBulkAction::make(),
+                    //DeleteBulkAction::make(),
                     //ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
+                    //RestoreBulkAction::make(),
                 ]),
             ])
             ->modifyQueryUsing(fn(Builder $query) => $query

@@ -191,6 +191,10 @@ class ComposerStaticInit769a7987de9d1a2978fe70e1d6972a66
         array (
             'Illuminate\\Support\\' => 19,
             'Illuminate\\' => 11,
+            'Icetalker\\FilamentTableRepeater\\Database\\Factories\\' => 51,
+            'Icetalker\\FilamentTableRepeater\\' => 32,
+            'Icetalker\\FilamentTableRepeatableEntry\\Database\\Factories\\' => 58,
+            'Icetalker\\FilamentTableRepeatableEntry\\' => 39,
         ),
         'G' => 
         array (
@@ -632,6 +636,22 @@ class ComposerStaticInit769a7987de9d1a2978fe70e1d6972a66
         'Illuminate\\' => 
         array (
             0 => __DIR__ . '/..' . '/laravel/framework/src/Illuminate',
+        ),
+        'Icetalker\\FilamentTableRepeater\\Database\\Factories\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/icetalker/filament-table-repeater/database/factories',
+        ),
+        'Icetalker\\FilamentTableRepeater\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/icetalker/filament-table-repeater/src',
+        ),
+        'Icetalker\\FilamentTableRepeatableEntry\\Database\\Factories\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/icetalker/filament-table-repeatable-entry/database/factories',
+        ),
+        'Icetalker\\FilamentTableRepeatableEntry\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/icetalker/filament-table-repeatable-entry/src',
         ),
         'GuzzleHttp\\UriTemplate\\' => 
         array (
@@ -3314,6 +3334,12 @@ class ComposerStaticInit769a7987de9d1a2978fe70e1d6972a66
         'Highlight\\RegExMatch' => __DIR__ . '/..' . '/scrivo/highlight.php/Highlight/RegExMatch.php',
         'Highlight\\RegExUtils' => __DIR__ . '/..' . '/scrivo/highlight.php/Highlight/RegExUtils.php',
         'Highlight\\Terminators' => __DIR__ . '/..' . '/scrivo/highlight.php/Highlight/Terminators.php',
+        'Icetalker\\FilamentTableRepeatableEntry\\Facades\\FilamentTableRepeatableEntry' => __DIR__ . '/..' . '/icetalker/filament-table-repeatable-entry/src/Facades/FilamentTableRepeatableEntry.php',
+        'Icetalker\\FilamentTableRepeatableEntry\\FilamentTableRepeatableEntryServiceProvider' => __DIR__ . '/..' . '/icetalker/filament-table-repeatable-entry/src/FilamentTableRepeatableEntryServiceProvider.php',
+        'Icetalker\\FilamentTableRepeatableEntry\\Infolists\\Components\\TableRepeatableEntry' => __DIR__ . '/..' . '/icetalker/filament-table-repeatable-entry/src/Infolists/Components/TableRepeatableEntry.php',
+        'Icetalker\\FilamentTableRepeater\\Facades\\FilamentTableRepeater' => __DIR__ . '/..' . '/icetalker/filament-table-repeater/src/Facades/FilamentTableRepeater.php',
+        'Icetalker\\FilamentTableRepeater\\FilamentTableRepeaterServiceProvider' => __DIR__ . '/..' . '/icetalker/filament-table-repeater/src/FilamentTableRepeaterServiceProvider.php',
+        'Icetalker\\FilamentTableRepeater\\Forms\\Components\\TableRepeater' => __DIR__ . '/..' . '/icetalker/filament-table-repeater/src/Forms/Components/TableRepeater.php',
         'Illuminate\\Auth\\Access\\AuthorizationException' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Auth/Access/AuthorizationException.php',
         'Illuminate\\Auth\\Access\\Events\\GateEvaluated' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Auth/Access/Events/GateEvaluated.php',
         'Illuminate\\Auth\\Access\\Gate' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Auth/Access/Gate.php',

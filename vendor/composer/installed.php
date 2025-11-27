@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '49fd468618aad3cc4a61b2a326b84cd83b1561f9',
+        'reference' => 'e476f6f1d12d237f7c8563f790d7abaddcae38e2',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -364,6 +364,24 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'icetalker/filament-table-repeatable-entry' => array(
+            'pretty_version' => 'v2.0.0',
+            'version' => '2.0.0.0',
+            'reference' => '17a3039fc65165a0198c31792d84f336695774f2',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../icetalker/filament-table-repeatable-entry',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'icetalker/filament-table-repeater' => array(
+            'pretty_version' => 'v2.0.2',
+            'version' => '2.0.2.0',
+            'reference' => 'f633ecb3f54f3adc93f1e6a90a40dfe8bc03483a',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../icetalker/filament-table-repeater',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'illuminate/auth' => array(
             'dev_requirement' => false,
             'replaced' => array(
@@ -628,7 +646,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '49fd468618aad3cc4a61b2a326b84cd83b1561f9',
+            'reference' => 'e476f6f1d12d237f7c8563f790d7abaddcae38e2',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

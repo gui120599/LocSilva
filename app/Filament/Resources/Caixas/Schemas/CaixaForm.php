@@ -22,7 +22,7 @@ class CaixaForm
             ->columns(3)
             ->components([
                 Section::make('Dados do Caixa')
-                    ->columnSpan(1)
+                    ->columnSpan(fn (string $context) => $context === 'edit' ? 'full' : 1)
                     ->schema([
                         Select::make('user_id')
                             ->label('Responsável')
