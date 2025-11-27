@@ -23,7 +23,7 @@
     <div class="p-4 max-w-6xl mx-auto ring-1 ring-gray-100/70">
         <!-- Header Principal e Logo -->
         <header
-            class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-6 mb-6">
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-2 mb-2">
             <div class="space-y-1">
                 <h1 class="text-3xl font-extrabold text-gray-800">
                     Contrato de Aluguel <span class="text-primary-600">#{{ $aluguel->id }}</span>
@@ -40,50 +40,47 @@
         </header>
 
         <!-- Seção de Detalhes (Grid 3 Colunas) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-1">
 
             <!-- Card 1: Locatário (Cliente) -->
             <div
-                class="p-5 border border-gray-100 bg-gray-50/50 rounded-xl shadow-sm hover:shadow-md transition duration-300">
-                <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
+                class="p-3 border border-gray-100 bg-gray-50/50 rounded-xl transition duration-300">
+                <h2 class="text-lg font-bold text-gray-700 mb-1 flex items-center">
                     <x-heroicon-s-user class="w-5 h-5 mr-2 text-primary-500" /> Locatário
                 </h2>
-                <div class="space-y-1 text-sm text-gray-600">
-                    <p><strong class="text-[10px]">Nome:</strong> {{ $aluguel->cliente->nome }}</p>
-                    <p><strong class="text-[10px]">CPF/CNPJ:</strong> {{ $aluguel->cliente->cpf_cnpj }}</p>
-                    <p><strong class="text-[10px]">Telefone:</strong> {{ $aluguel->cliente->telefone }}</p>
-                    <p><strong class="text-[10px]">Endereço:</strong>
-                        {{ $aluguel->cliente->endereco ?? 'Não informado' }}</p>
+                <div class="space-y-1 text-[9px] text-gray-600">
+                    <p><strong>Nome: </strong> {{ $aluguel->cliente->nome }}</p>
+                    <p><strong>CPF/CNPJ: </strong> {{ $aluguel->cliente->cpf_cnpj }}</p>
+                    <p><strong>Telefone: </strong> {{ $aluguel->cliente->telefone }}</p>
+                    <p><strong>Endereço: </strong> {{ $aluguel->cliente->endereco ?? 'Não informado' }}</p>
                 </div>
             </div>
 
             <!-- Card 2: Locador (Sua Empresa) -->
             <div
-                class="p-5 border border-gray-100 bg-gray-50/50 rounded-xl shadow-sm hover:shadow-md transition duration-300">
-                <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
+                class="p-3 border border-gray-100 bg-gray-50/50 rounded-xl transition duration-300">
+                <h2 class="text-lg font-bold text-gray-700 mb-1 flex items-center">
                     <x-heroicon-s-building-office-2 class="w-5 h-5 mr-2 text-primary-500" /> Locador
                 </h2>
-                <div class="space-y-1 text-sm text-gray-600">
-                    <p><strong>Empresa:</strong> 22.341.672 IVAN DE AQUINO SILVA - ME</p>
-                    <p><strong>CNPJ:</strong> 22.341.672/0001-01</p>
-                    <p><strong>Telefone:</strong> (62) 9 9323-9697</p>
-                    <p><strong>Endereço:</strong> R. Maria Conceição, 245...</p>
-                    <p class="text-xs text-gray-400">Parque Amazonia, Goiânia - GO, 74840-750</p>
+                <div class="space-y-1 text-[9px] text-gray-600">
+                    <p><strong>Empresa: </strong> 22.341.672 IVAN DE AQUINO SILVA - ME</p>
+                    <p><strong>CNPJ: </strong> 22.341.672/0001-01</p>
+                    <p><strong>Telefone: </strong> (62) 9 9323-9697</p>
+                    <p><strong>Endereço: </strong> R. Maria Conceição, 245, Parque Amazonia, Goiânia - GO, 74840-750</p>
                 </div>
             </div>
 
             <!-- Card 3: Carreta/Reboque -->
             <div
-                class="p-5 border border-gray-100 bg-gray-50/50 rounded-xl shadow-sm hover:shadow-md transition duration-300">
-                <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
+                class="p-3 border border-gray-100 bg-gray-50/50 rounded-xl shadow-sm hover:shadow-md transition duration-300">
+                <h2 class="text-lg font-bold text-gray-700 mb-1 flex items-center">
                     <x-heroicon-s-truck class="w-5 h-5 mr-2 text-primary-500" /> Reboque
                 </h2>
                 <div class="space-y-1 text-sm text-gray-600">
-                    <p><strong>Identificação:</strong> {{ $aluguel->carreta->identificacao }}</p>
-                    <p><strong>Placa:</strong> <span
-                            class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">{{ $aluguel->carreta->placa }}</span>
+                    <p><strong class="text-[9px]">Identificação: </strong> {{ $aluguel->carreta->identificacao }}</p>
+                    <p><strong class="text-[9px]">Placa: </strong><span class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">{{ $aluguel->carreta->placa }}</span>
                     </p>
-                    <p><strong>Valor Diária:</strong> <span class="font-semibold text-green-600">R$
+                    <p><strong class="text-[9px]">Valor Diária: </strong> <span class="font-semibold text-green-600">R$
                             {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</span></p>
                     <!-- Adicione aqui mais informações relevantes do veículo, se houver -->
                 </div>
@@ -91,10 +88,10 @@
         </div>
 
         <!-- Seção Check-in e Check-out -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 border-t border-gray-200 pt-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-2">
 
             <!-- Check-in -->
-            <div class="p-5 border border-gray-200 bg-white rounded-xl shadow-lg md:col-span-1">
+            <div class="p-3 border border-gray-200 bg-white rounded-xl md:col-span-1">
                 <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
                     <x-heroicon-s-arrow-uturn-right class="w-5 h-5 mr-2 text-blue-500" /> Check-in
                 </h2>
@@ -125,7 +122,7 @@
             </div>
 
             <!-- Check-out -->
-            <div class="p-5 border border-gray-200 bg-white rounded-xl shadow-lg md:col-span-1">
+            <div class="p-3 border border-gray-200 bg-white rounded-xl md:col-span-1">
                 <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
                     <x-heroicon-s-arrow-uturn-left class="w-5 h-5 mr-2 text-red-500" /> Check-out
                 </h2>
@@ -188,10 +185,10 @@
         </div>
 
         <!-- NOVO: Seção de Valores e movimentos -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 border-t border-gray-200 pt-4">
+        <div class="grid grid-cols-1 gap-2 my-2">
 
             <!-- Resumo Financeiro -->
-            <div class="md:col-span-1 p-5 border border-gray-200 bg-white rounded-xl shadow-lg">
+            <div class="col-span-1 p-3 border border-gray-200 bg-white rounded-xl">
                 <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
                     <x-heroicon-s-currency-dollar class="w-5 h-5 mr-2 text-primary-500" /> Resumo Financeiro
                 </h2>
@@ -223,13 +220,13 @@
             </div>
 
             <!-- Histórico de movimentos -->
-            <div class="md:col-span-2 p-5 border border-gray-200 bg-white rounded-xl shadow-lg">
+            <div class="col-span-1 p-3 border border-gray-200 bg-white rounded-xl">
                 <h2 class="text-lg font-bold text-gray-700 mb-3 flex items-center">
                     <x-heroicon-s-banknotes class="w-5 h-5 mr-2 text-primary-500" /> Pagamentos
                 </h2>
 
                 @if ($aluguel->movimentos->count())
-                    <ul class="space-y-2 text-sm">
+                    <ul class="space-y-2 text-[10px]">
                         @foreach ($aluguel->movimentos as $pagamento)
                             <li class="flex justify-between items-center border-b border-gray-100 pb-1 last:border-b-0">
                                 <span class="text-gray-600">{{ $pagamento->created_at->format('d/m/Y') }} -
@@ -253,7 +250,7 @@
         </div>
 
         <!-- NOVO: Seção de Assinaturas -->
-        <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-12 text-center">
+        <div class="grid grid-cols-2 gap-12 text-center">
             <!-- Locatário -->
             <div>
                 <div class="border-b border-gray-400 h-16 w-3/4 mx-auto mb-2">
@@ -279,6 +276,6 @@
 
     </div>
     <script>
-        window.print();
+        //window.print();
     </script>
 </body>
