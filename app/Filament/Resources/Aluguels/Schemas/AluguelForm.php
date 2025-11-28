@@ -288,7 +288,14 @@ class AluguelForm
                                 ->seconds(false)
                                 ->default(now())
                                 ->live()
-                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                    // Quando a data de retirada mudar, atualiza a previsão com +1 dia e +20min
+                                    if ($state) {
+                                        $dataRetirada = Carbon::parse($state);
+                                        $dataPrevista = $dataRetirada->copy()->addDay()->addMinutes(20);
+                                        $set('data_devolucao_prevista', $dataPrevista);
+                                    }
+                                    
                                     self::calcularTotais($set, $get);
                                 })
                                 ->required(),
@@ -296,6 +303,15 @@ class AluguelForm
                             DateTimePicker::make('data_devolucao_prevista')
                                 ->label('Data de Prevista para Devolução')
                                 ->seconds(false)
+                                ->live()
+                                ->default(function (Get $get) {
+                                    // Define o padrão como data_retirada + 1 dia + 20 minutos
+                                    $dataRetirada = $get('data_retirada');
+                                    if ($dataRetirada) {
+                                        return Carbon::parse($dataRetirada)->addDay()->addMinutes(20);
+                                    }
+                                    return now()->addDay()->addMinutes(20);
+                                })
                                 ->afterStateUpdated(function (Get $get, Set $set) {
                                     self::calcularTotais($set, $get);
                                 })
