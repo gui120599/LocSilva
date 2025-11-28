@@ -21,7 +21,9 @@ class UsersTable
         return $table
             ->columns([
                 ImageColumn::make('avatar_url')
-                    ->searchable(),
+                    ->label('Imagem')
+                    ->disk('public')
+                    ->rounded(),
                 TextColumn::make('name')
                     ->sortable()
                     ->searchable(),
