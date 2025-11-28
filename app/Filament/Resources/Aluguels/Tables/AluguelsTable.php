@@ -799,7 +799,6 @@ class AluguelsTable
         $set('valor_total_aluguel', $valorTotal);
     }
 
-
     /**
      * Calcula o total de um movimento específico
      */

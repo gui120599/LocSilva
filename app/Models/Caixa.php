@@ -48,7 +48,7 @@ class Caixa extends Model
     {
         return $this->movimentos()
             ->where('tipo', 'entrada')
-            ->sum('valor_total');
+            ->sum('valor_total_movimento');
     }
 
     /**
@@ -58,7 +58,7 @@ class Caixa extends Model
     {
         return $this->movimentos()
             ->where('tipo', 'saida')
-            ->sum('valor_total');
+            ->sum('valor_total_movimento');
     }
 
     /**

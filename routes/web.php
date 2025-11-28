@@ -1,37 +1,11 @@
 <?php
 
-use App\Models\Carreta;
+use App\Http\Controllers\AluguelController;
+use App\Http\Controllers\CaixaController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 
-Route::get('/print-aluguel/{id}',[\App\Http\Controllers\AluguelController::class, 'printAluguel'])->name('print-aluguel')->middleware('auth');
+Route::get('/print-aluguel/{id}',[AluguelController::class, 'printAluguel'])->name('print-aluguel')->middleware('auth');
 
-Route::get('/documento/print/{id}', function ($id) {
-    $registro = Carreta::find($id); // 👈 Ajuste o Model
-    //dd($registro);
+Route::get('/print-caixa/{id}',[CaixaController::class, 'printCaixa'])->name('print-caixa')->middleware('auth');
 
-    if (!$registro->documento) {
-        abort(404);
-    }
-
-    $filePath = Storage::disk('public')->path($registro->documento);
-    $mimeType = Storage::disk('public')->mimeType($registro->documento);
-
-    if ($filePath) {
-
-        // PDF abre direto para impressão
-        if ($mimeType === 'application/pdf') {
-            return response()->file($filePath, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline'
-            ]);
-        }
-
-        // Outros tipos faz download
-        //return Storage::disk('public')->download($registro->documento);
-        abort(404);
-    }
-
-
-
-})->middleware('auth')->name('documento.print');
+Route::get('/laravel/login', fn() => redirect(route('filament.admin.auth.login')))->name('login');

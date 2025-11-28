@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Caixas\Tables;
 
+use App\Filament\Tables\MovimentosCaixa;
+use App\Models\Caixa;
 use App\Models\MovimentoCaixa;
 use Filament\Actions\Action;
 use Filament\Actions\AssociateAction;
@@ -12,7 +14,9 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\ModalTableSelect;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ViewField;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -69,7 +73,62 @@ class CaixasTable
             ])
             ->recordActions([
                 EditAction::make(),
+
+                Action::make('fechar')
+                    ->label('Fechar')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Fechar Caixa')
+                    ->modalDescription('Deseja fechar o caixa e imprimir o relatório de fechamento?')
+                    ->modalIcon('heroicon-o-lock-closed')
+                    ->form([
+                        Textarea::make('observacoes')
+                            ->label('Observações (opcional)')
+                            ->placeholder('Adicione observações sobre o fechamento do caixa...')
+                            ->rows(3)
+                            ->maxLength(500),
+                    ])
+                    ->action(function (Caixa $record, array $data) {
+                        if (!$record->isAberto()) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Atenção')
+                                ->body('Este caixa já está fechado.')
+                                ->send();
+
+                            return;
+                        }
+
+                        if (!empty($data['observacoes'])) {
+                            $record->observacoes = $data['observacoes'];
+                            $record->save();
+                        }
+
+                        $record->fechar();
+
+                        Notification::make()
+                            ->success()
+                            ->title('Caixa Fechado')
+                            ->body("Caixa #{$record->id} foi fechado com sucesso! Abrindo relatório para impressão...")
+                            ->send();
+
+                        // Abre em nova aba para impressão
+                        //return redirect()->to(route('print-caixa', ['id' => $record->id]));
+                    })
+                    ->visible(fn(Caixa $record) => $record->isAberto()),
+
+                Action::make('print')
+                    ->label('Relatório')
+                    ->icon('heroicon-s-printer')
+                    ->color('primary')
+                    // A CHAVE: Passar o registro ($record) para a rota dentro do closure
+                    ->url(fn($record): string => route('print-caixa', ['id' => $record->id]))
+                    ->openUrlInNewTab(),
+
+                // REMOVIDO: requiresConfirmation(true)
                 Action::make('gerenciarMovimentos')
+                ->icon('heroicon-o-list-bullet')
                     ->label('Movimentos')
                     ->modalHeading('Movimentos da Sessão')
                     ->modalWidth(Width::FiveExtraLarge)
@@ -90,15 +149,20 @@ class CaixasTable
                         Section::make('Adicionar Movimento')
                             ->schema([
                                 Select::make('movimentos_selecionados')
-                                    ->label('Selecionar Movimentos')
                                     ->multiple()
-                                    ->options(
-                                        fn() =>
-                                        MovimentoCaixa::whereNull('caixa_id')
-                                            ->pluck('descricao', 'id')
-                                    )
                                     ->searchable()
-                                    ->preload(),
+                                    ->options(
+                                        MovimentoCaixa::where('caixa_id', null)->get()
+                                            ->mapWithKeys(fn($value) => [
+                                                $value->id =>
+                                                    "{$value->tipo} - {$value->descricao} - R$ "
+                                                    . number_format($value->valor_total_movimento, 2, ',', '.')
+                                                    . " - Aluguel: {$value->aluguel_id} - Cliente: "
+                                                    . optional(optional($value->aluguel)->cliente)->nome
+
+                                            ])
+                                    )
+
                             ])
                     ])
                     ->action(function ($record, array $data) {
@@ -112,38 +176,6 @@ class CaixasTable
                                 ->send();
                         }
                     }),
-
-
-
-                Action::make('visualizar_movimentos')
-                    ->label('Visualizar Movimentos de Caixa')
-                    ->icon('heroicon-o-table-cells')
-                    ->slideOver()
-                    ->modalWidth('7xl')
-                    ->modalContent(function (array $arguments, $record, $livewire) {
-
-                        // Query dos movimentos desta sessão/caixa
-                        $query = $record->movimentos()->getQuery();
-
-                        // Cria a instância da Table — ATENÇÃO: precisa de um nome (string)
-                        $table = Table::make($livewire); // <-- corrija passando um nome
-            
-                        // Deixe o Resource aplicar suas colunas/filtros/padrões
-                        $configuredTable = MovimentoCaixaResource::table($table);
-
-                        // Aplica a query específica (movimentos da sessão corrente)
-                        $configuredTable->query($query);
-
-                        // Ajustes opcionais (paginação, quantidade por página)
-                        $configuredTable->defaultSort('created_at', 'desc');
-
-                        // Sobrescreve actions de linha para incluir 'Desassociar'
-                       
-
-                        // Renderiza passando o componente Livewire atual
-                        return $configuredTable->render($livewire);
-                    })
-
 
 
             ])
