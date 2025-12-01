@@ -241,6 +241,7 @@ class AluguelForm
                                             if ($carreta) {
                                                 $valorFormatado = number_format((float) $carreta->valor_diaria, 2, ',', '.');
                                                 $set('valor_diaria', $valorFormatado);
+                                                $set('valor_total_aluguel', $valorFormatado);
                                                 $set('carreta.foto', $carreta->foto);
                                                 $set('carreta.identificacao', $carreta->identificacao);
                                                 $set('carreta.status', $carreta->status);
