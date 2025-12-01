@@ -449,7 +449,6 @@ class AluguelForm
                                             ->prefix('R$')
                                             ->minValue(0)
                                             ->step(0.01)
-                                            ->default(0)
                                             ->live()
                                             ->afterStateUpdated(fn ($set, $get) => self::calcularValores($set, $get))
                                             ->helperText('Promoções, cortesias, etc.'),
@@ -457,10 +456,9 @@ class AluguelForm
                                         // Valor Total (readonly)
                                         TextInput::make('valor_total_aluguel')
                                             ->label('Valor Total')
-                                            ->required()
-                                            ->prefix('R$')
-                                            ->disabled()
-                                            ->dehydrated()
+                                            ->mask(RawJs::make(<<<'JS'
+                                                $money($input, ',', '.', 2)
+                                            JS))
                                             ->dehydrateStateUsing(function ($state) {
                                                 // Remove formatação antes de salvar
                                                 if (!$state)
@@ -472,6 +470,19 @@ class AluguelForm
 
                                                 return (float) $value;
                                             })
+                                            ->formatStateUsing(function ($state) {
+                                                // Formata para exibição
+                                                if (!$state)
+                                                    return '0,00';
+
+                                                return number_format((float) $state, 2, ',', '.');
+                                            })
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->live(true)
+                                            ->prefix('R$')
+                                            ->minValue(0)
+                                            ->step(0.01)
                                             ->extraAttributes(['class' => 'font-bold text-lg'])
                                             ->helperText('Total do aluguel'),
                                         
@@ -482,6 +493,9 @@ class AluguelForm
                                                 TextInput::make('valor_pago_aluguel')
                                                     ->label('Total Pago')
                                                     ->prefix('R$')
+                                                    ->mask(RawJs::make(<<<'JS'
+                                                        $money($input, ',', '.', 2)
+                                                    JS))
                                                     ->dehydrateStateUsing(function ($state) {
                                                         // Remove formatação antes de salvar
                                                         if (!$state)
@@ -492,6 +506,13 @@ class AluguelForm
                                                         $value = str_replace(',', '.', $value);
 
                                                         return (float) $value;
+                                                    })
+                                                    ->formatStateUsing(function ($state) {
+                                                        // Formata para exibição
+                                                        if (!$state)
+                                                            return '0,00';
+
+                                                        return number_format((float) $state, 2, ',', '.');
                                                     })
                                                     ->default('0,00')
                                                     ->extraAttributes(['class' => 'text-green-600 font-semibold']),
@@ -514,9 +535,16 @@ class AluguelForm
 
                                                         return (float) $value;
                                                     })
+                                                    ->formatStateUsing(function ($state) {
+                                                        // Formata para exibição
+                                                        if (!$state)
+                                                            return '0,00';
+
+                                                        return number_format((float) $state, 2, ',', '.');
+                                                    })
                                                     ->extraAttributes(['class' => 'text-red-600 font-bold text-lg']),
-                                                    ])
-                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columnSpanFull(),
                                     ]),
                                 Section::make('Registrar Pagamentos')
                                     ->columnSpan(2)
@@ -823,6 +851,22 @@ class AluguelForm
             ]);
     }
 
+    protected static function normalizeMoney($value): float
+    {
+        if (is_null($value) || $value === '') {
+            return 0;
+        }
+
+        // Remove pontos de milhar
+        $value = str_replace('.', '', $value);
+
+        // Troca vírgula decimal por ponto
+        $value = str_replace(',', '.', $value);
+
+        return floatval($value);
+    }
+
+
     /**
      * Calulura totais
      */
@@ -888,17 +932,15 @@ class AluguelForm
         );
     }
 
-
-
     /**
      * Calcula os valores totais do aluguel
      */
     protected static function calcularValores(Set $set, Get $get): void
     {
-        $valorDiaria = floatval($get('valor_diaria') ?? 0);
+        $valorDiaria       = self::normalizeMoney($get('valor_diaria'));
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
-        $valorAcrescimo = floatval($get('valor_acrescimo_aluguel') ?? 0);
-        $valorDesconto = floatval($get('valor_desconto_aluguel') ?? 0);
+        $valorAcrescimo    = self::normalizeMoney($get('valor_acrescimo_aluguel'));
+        $valorDesconto     = self::normalizeMoney($get('valor_desconto_aluguel'));
 
         // Calcular subtotal
         $subtotal = $valorDiaria * $quantidadeDiarias;
@@ -906,8 +948,9 @@ class AluguelForm
         // Calcular total
         $valorTotal = $subtotal + $valorAcrescimo - $valorDesconto;
 
-        $set('valor_total_aluguel', $valorTotal);
-        self::atualizarTotaisPagamento($get('movimentos'),$set,$get);
+        $set('valor_total_aluguel', number_format($valorTotal, 2, ',', '.'));
+
+        self::atualizarTotaisPagamento($get('movimentos'), $set, $get);
     }
 
     /**
@@ -915,47 +958,41 @@ class AluguelForm
      */
     protected static function calcularTotalMovimento(Set $set, Get $get): void
     {
-        $valorPago = floatval($get('valor_pago_movimento') ?? 0);
-        $valorAcrescimo = floatval($get('valor_acrescimo_movimento') ?? 0);
-        $valorDesconto = floatval($get('valor_desconto_movimento') ?? 0);
+        $valorPago      = self::normalizeMoney($get('valor_pago_movimento'));
+        $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_movimento'));
+        $valorDesconto  = self::normalizeMoney($get('valor_desconto_movimento'));
 
         $valorTotal = $valorPago + $valorAcrescimo - $valorDesconto;
 
-        $set('valor_total_movimento', $valorTotal);
+        $set('valor_total_movimento', number_format($valorTotal, 2, ',', '.'));
     }
+
 
     /**
      * Atualiza os totais de pagamento no resumo
      */
     protected static function atualizarTotaisPagamento(array $movimentos, Set $set, Get $get): void
     {
-       $totalPago = 0;
+        $totalPago = 0;
 
-        // 1. Calcular o total pago
+        // 1. Calcular o total pago pelos movimentos
         if (is_array($movimentos)) {
             foreach ($movimentos as $movimento) {
                 if (isset($movimento['valor_total_movimento'])) {
-                    // Apenas soma, assumindo que os valores internos no Repeater já são números ou strings válidas.
-                    $totalPago += floatval($movimento['valor_total_movimento']);
+                    $totalPago += self::normalizeMoney($movimento['valor_total_movimento']);
                 }
             }
         }
 
-        // 2. Obter e limpar o Valor Total do Aluguel (Correção para números acima de 1000)
-        
-        
-        // Substitui a vírgula decimal por ponto decimal e converte para float
-        $valorTotal = floatval($get('valor_total_aluguel'));
+        // 2. Total do aluguel corretamente normalizado (aceita vírgula e ponto)
+        $valorTotalAluguel = self::normalizeMoney($get('valor_total_aluguel'));
 
-        // 3. Calcular o saldo
-        $saldo = $valorTotal - $totalPago;
+        // 3. Calcular saldo
+        $saldo = $valorTotalAluguel - $totalPago;
 
-        // 4. Definir os valores formatados para exibição
-        
-        // Valor Pago (Ex: 1.250,00)
+        // 4. Definir valores formatados para exibição no resumo
         $set('valor_pago_aluguel', number_format($totalPago, 2, ',', '.'));
-        
-        // Saldo (Ex: 250,00)
         $set('valor_saldo_aluguel', number_format($saldo, 2, ',', '.'));
-        }
+    }
+
 }
