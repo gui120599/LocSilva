@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Aluguels\Tables;
 
 use App\Models\Aluguel;
+use App\Models\BandeiraCartaoPagamento;
 use App\Models\Carreta;
 use App\Models\MetodoPagamento;
 use Carbon\Carbon;
@@ -34,6 +35,9 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Leandrocfe\FilamentPtbrFormFields\Currencies\BRL;
+use Leandrocfe\FilamentPtbrFormFields\Money;
 
 class AluguelsTable
 {
@@ -165,6 +169,31 @@ class AluguelsTable
 
                         return 'Informe a data real de devolução.';
                     })
+                    ->fillForm(function ($record): array {
+                        return [
+                            'quantidade_diarias' => $record->quantidade_diarias,
+                            'valor_diaria' => $record->valor_diaria,
+                            'valor_acrescimo_aluguel' => $record->valor_acrescimo_aluguel,
+                            'valor_desconto_aluguel' => $record->valor_desconto_aluguel,
+                            'valor_total_aluguel' => $record->valor_total_aluguel,
+                            'valor_pago_aluguel' => number_format($record->movimentos->sum('valor_total_movimento'), '2', ',', '.'),
+                            'valor_saldo_aluguel' => number_format(max(0, $record->valor_total_aluguel - $record->movimentos->sum('valor_total_movimento')), '2', ',', '.'),
+                            'movimentos_existentes' => $record->movimentos->map(function ($movimento) {
+                                return [
+                                    'descricao' => $movimento->descricao,
+                                    'user_id' => $movimento->user_id,
+                                    'tipo' => $movimento->tipo,
+                                    'metodo_pagamento_id' => $movimento->metodo_pagamento_id,
+                                    'cartao_pagamento_id' => $movimento->cartao_pagamento_id,
+                                    'autorizacao' => $movimento->autorizacao,
+                                    'valor_pago_movimento' => $movimento->valor_pago_movimento,
+                                    'valor_recebido_movimento' => $movimento->valor_recebido_movimento,
+                                    'troco_movimento' => $movimento->troco_movimento,
+                                    'valor_total_movimento' => $movimento->valor_total_movimento,
+                                ];
+                            })->toArray(),
+                        ];
+                    })
                     ->form(fn(Aluguel $record): array => [
                         DateTimePicker::make('data_devolucao_real')
                             ->disabled(fn($record) => in_array($record->status, ['pendente']))
@@ -217,17 +246,15 @@ class AluguelsTable
                                     $set('valor_total_aluguel', $valorFormatado);
 
                                     // Recalcula totais de pagamentos
-                                    self::atualizarTotaisPagamento_2($set, $get);
-                                }
-                                else {
+                                    self::atualizarTotaisPagamento($record->movimentos->toArray(), $set, $get);
+                                } else {
                                     // Se não tiver datas válidas, zera
                                     $set('quantidade_diarias', null);
                                     $set('valor_total_aluguel', '0,00');
                                 }
                             })
                             ->required()
-                            ->maxDate(now()),
-
+                            ->maxDate(now()->addMinutes(20)),
 
                         Hidden::make('status')
                             ->default($record->status),
@@ -249,127 +276,38 @@ class AluguelsTable
                                             ->disabled()
                                             ->dehydrated()
                                             ->suffix('dia(s)')
-                                            ->default(function () use ($record): string {
-                                                return $record->quantidade_diarias;
-                                            })
                                             ->helperText('Calculado automaticamente pelas datas'),
 
                                         // Valor da Diária (editável)
-                                        TextInput::make('valor_diaria')
+                                        Money::make('valor_diaria')
                                             ->label('Valor da Diária')
                                             ->required()
                                             ->live()
-                                            ->prefix('R$')
                                             ->disabled()
                                             ->dehydrated()
-                                            ->default(function () use ($record): string {
-                                                return number_format($record->valor_diaria ?? 0, 2, ",", ".");
-                                            })
-                                            ->dehydrateStateUsing(function ($state) {
-                                                // Remove formatação antes de salvar
-                                                if (!$state)
-                                                    return 0;
-
-                                                // Remove R$, pontos e converte vírgula em ponto
-                                                $value = str_replace(['R$', '.', ' '], '', $state);
-                                                $value = str_replace(',', '.', $value);
-
-                                                return (float) $value;
-                                            })
-                                            ->minValue(0)
-                                            ->step(0.01)
                                             ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                             ->helperText('Valor por dia de aluguel'),
 
                                         // Acréscimos
-                                        TextInput::make('valor_acrescimo_aluguel')
+                                        Money::make('valor_acrescimo_aluguel')
                                             ->label('(+)Acréscimos')
-                                            ->default(function () use ($record): string {
-                                                return number_format($record->valor_acrescimo_aluguel ?? 0, 2, ",", ".");
-                                            })
-                                            ->mask(RawJs::make(<<<'JS'
-                                                $money($input, ',', '.', 2)
-                                            JS))
-                                            ->dehydrateStateUsing(function ($state) {
-                                                // Remove formatação antes de salvar
-                                                if (!$state)
-                                                    return 0;
-
-                                                // Remove R$, pontos e converte vírgula em ponto
-                                                $value = str_replace(['R$', '.', ' '], '', $state);
-                                                $value = str_replace(',', '.', $value);
-
-                                                return (float) $value;
-                                            })
-                                            ->formatStateUsing(function ($state) {
-                                                // Formata para exibição
-                                                if (!$state)
-                                                    return '0,00';
-
-                                                return number_format((float) $state, 2, ',', '.');
-                                            })
-                                            ->prefix('R$')
-                                            ->minValue(0)
-                                            ->step(0.01)
                                             ->live()
                                             ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                             ->helperText('Taxas, multas, etc.'),
 
                                         // Descontos
-                                        TextInput::make('valor_desconto_aluguel')
+                                        Money::make('valor_desconto_aluguel')
                                             ->label('(-)Descontos')
-                                            ->default(function () use ($record): string {
-                                                return number_format($record->valor_desconto_aluguel ?? 0, 2, ",", ".");
-                                            })
-                                            ->mask(RawJs::make(<<<'JS'
-                                                    $money($input, ',', '.', 2)
-                                                JS))
-                                            ->dehydrateStateUsing(function ($state) {
-                                                // Remove formatação antes de salvar
-                                                if (!$state)
-                                                    return 0;
-
-                                                // Remove R$, pontos e converte vírgula em ponto
-                                                $value = str_replace(['R$', '.', ' '], '', $state);
-                                                $value = str_replace(',', '.', $value);
-
-                                                return (float) $value;
-                                            })
-                                            ->formatStateUsing(function ($state) {
-                                                // Formata para exibição
-                                                if (!$state)
-                                                    return '0,00';
-
-                                                return number_format((float) $state, 2, ',', '.');
-                                            })
-                                            ->prefix('R$')
-                                            ->minValue(0)
-                                            ->step(0.01)
                                             ->live()
                                             ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                             ->helperText('Promoções, cortesias, etc.'),
 
                                         // Valor Total (readonly)
-                                        TextInput::make('valor_total_aluguel')
+                                        Money::make('valor_total_aluguel')
                                             ->label('Valor Total')
-                                            ->default(function () use ($record): string {
-                                                return number_format($record->valor_total_aluguel ?? 0, 2, ",", ".");
-                                            })
                                             ->required()
-                                            ->prefix('R$')
                                             ->disabled()
                                             ->dehydrated()
-                                            ->dehydrateStateUsing(function ($state) {
-                                                // Remove formatação antes de salvar
-                                                if (!$state)
-                                                    return 0;
-
-                                                // Remove R$, pontos e converte vírgula em ponto
-                                                $value = str_replace(['R$', '.', ' '], '', $state);
-                                                $value = str_replace(',', '.', $value);
-
-                                                return (float) $value;
-                                            })
                                             ->extraAttributes(['class' => 'font-bold text-lg'])
                                             ->helperText('Total do aluguel'),
 
@@ -377,55 +315,20 @@ class AluguelsTable
                                         Section::make()
                                             ->schema([
                                                 // Total Pago (calculado pelos movimentos)
-                                                TextInput::make('valor_pago_aluguel')
+                                                Money::make('valor_pago_aluguel')
                                                     ->label('Total Pago')
-                                                    ->default(function () use ($record): string {
-                                                        return number_format($record->valor_pago_aluguel ?? 0, 2, ",", ".");
-                                                    })
-                                                    ->prefix('R$')
-                                                    ->dehydrateStateUsing(function ($state) {
-                                                        // Remove formatação antes de salvar
-                                                        if (!$state)
-                                                            return 0;
-
-                                                        // Remove R$, pontos e converte vírgula em ponto
-                                                        $value = str_replace(['R$', '.', ' '], '', $state);
-                                                        $value = str_replace(',', '.', $value);
-
-                                                        return (float) $value;
-                                                    })
                                                     ->extraAttributes(['class' => 'text-green-600 font-semibold']),
 
                                                 // Saldo Restante (calculado)
-                                                TextInput::make('valor_saldo_aluguel')
+                                                Money::make('valor_saldo_aluguel')
                                                     ->label('Saldo Restante')
-                                                    ->default(function () use ($record): string {
-                                                        return number_format($record->valor_saldo_aluguel ?? 0, 2, ",", ".");
-                                                    })
-                                                    ->prefix('R$')
-                                                    ->dehydrateStateUsing(function ($state) {
-                                                        // Remove formatação antes de salvar
-                                                        if (!$state)
-                                                            return 0;
-
-                                                        // Remove R$, pontos e converte vírgula em ponto
-                                                        $value = str_replace(['R$', '.', ' '], '', $state);
-                                                        $value = str_replace(',', '.', $value);
-
-                                                        return (float) $value;
-                                                    })
                                                     ->extraAttributes(['class' => 'text-red-600 font-bold text-lg']),
                                             ])
                                             ->columnSpanFull(),
                                     ]),
+
                                 Section::make('Registrar Pagamentos')
                                     ->columnSpan(2)
-                                     ->visible(function () use ($record): bool {
-                                        // Calcula o saldo restante (Total - Pago)
-                                        $saldoRestante = $record->valor_total_aluguel - $record->movimentos->sum('valor_total_movimento');
-                                        // Retorna true (visível) se o saldo for maior que zero (usando 0.01 para segurança de floats)
-                                        return $saldoRestante > 0.01;
-                                    })
                                     ->collapsible(fn($record) => in_array($record->status, ['ativo']))
                                     ->icon('heroicon-o-banknotes')
                                     ->description('Adicione os pagamentos recebidos')
@@ -433,40 +336,26 @@ class AluguelsTable
                                         // Você pode adicionar actions aqui se necessário
                                     ])
                                     ->schema([
-                                        
-                                        Repeater::make('movimentos')
-                                            ->relationship()
-                                            ->default($record->movimentos->toArray())
+
+                                        Repeater::make('movimentos_existentes')
+                                            ->label('Movimentos de Caixa Registrados')
+                                            ->columns(4)
+                                            ->collapsible()
                                             ->collapsed()
-                                            ->addActionLabel('Adicionar Pagamento')
+                                            ->addable(false)
+                                            ->deletable(false)
+                                            ->reorderable(false)
+                                            ->dehydrated(false) // Não enviar esses dados no submit
                                             ->itemLabel(
                                                 fn(array $state): ?string =>
                                                 isset($state['valor_total_movimento'])
-                                                ? 'Pagamento: R$ ' . number_format((float) $state['valor_total_movimento'], 2, ',', '.')
-                                                : 'Novo Pagamento'
+                                                    ? 'Pagamento: R$ ' . number_format((float) $state['valor_total_movimento'], 2, ',', '.')
+                                                    : 'Novo Pagamento'
                                             )
-                                            ->columns(4)
+                                            ->visible(fn($record) => $record->movimentos()->exists())
                                             ->schema([
-
-                                                // Descrição
-                                                TextInput::make('descricao')
-                                                    ->label('Descrição')
-                                                    ->placeholder('Ex: Pagamento inicial, Parcela 1/3, etc.')
-                                                    ->default(function () use ($record): string {
-                                                        return "Pagamento restante Aluguel ID - {$record->id}";
-                                                    })
-                                                    ->columnSpan(4),
-
-                                                // Hidden: User ID
-                                                Hidden::make('user_id')
-                                                    ->default(fn() => auth()->id()),
-
-                                                // Hidden: Tipo (sempre entrada para aluguel)
-                                                Hidden::make('tipo')
-                                                    ->default('entrada'),
-
-                                                // Método de Pagamento
                                                 ToggleButtons::make('metodo_pagamento_id')
+                                                    ->disabled()
                                                     ->label('Forma de Pagamento')
                                                     ->required()
                                                     ->live()
@@ -486,50 +375,36 @@ class AluguelsTable
                                                     ->inline()
                                                     ->default(1)
                                                     ->columnSpan(4),
-
                                                 // Bandeira do Cartão (condicional)
                                                 Select::make('cartao_pagamento_id')
+                                                    ->disabled()
                                                     ->label('Bandeira do Cartão')
-                                                    ->relationship('bandeiraCartao', 'bandeira')
+                                                    ->options(
+                                                        fn() => \App\Models\BandeiraCartaoPagamento::query()
+                                                            ->pluck('bandeira', 'id')
+                                                            ->toArray()
+                                                    )
                                                     ->searchable()
-                                                    ->preload()
                                                     ->visible(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
                                                     ->required(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
-                                                    ->columnSpan(2),
+                                                    ->columnSpan(4),
 
                                                 // Número de Autorização (condicional)
                                                 TextInput::make('autorizacao')
+                                                    ->disabled()
                                                     ->label('Nº Autorização')
                                                     ->placeholder('000000')
                                                     ->maxLength(20)
                                                     ->visible(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3, 4]))
-                                                    ->columnSpan(2),
+                                                    ->columnSpan(4),
+
+
 
                                                 // Valor Pago pelo Cliente
-                                                TextInput::make('valor_pago_movimento')
+                                                Money::make('valor_pago_movimento')
+                                                    ->disabled()
                                                     ->label('Valor Pago')
                                                     ->required()
-                                                    ->prefix('R$')
-                                                    ->minValue(0)
-                                                    ->dehydrateStateUsing(function ($state) {
-                                                        // Remove formatação antes de salvar
-                                                        if (!$state)
-                                                            return 0;
-
-                                                        // Remove R$, pontos e converte vírgula em ponto
-                                                        $value = str_replace(['R$', '.', ' '], '', $state);
-                                                        $value = str_replace(',', '.', $value);
-
-                                                        return (float) $value;
-                                                    })
-                                                    ->formatStateUsing(function ($state) {
-                                                        // Formata para exibição
-                                                        if (!$state)
-                                                            return '0,00';
-
-                                                        return number_format((float) $state, 2, ',', '.');
-                                                    })
-                                                    ->placeholder('0,00')
                                                     ->live(true)
                                                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
                                                         $valorPago = floatval($state ?? 0);
@@ -559,28 +434,9 @@ class AluguelsTable
                                                     ->columnSpan(2),
 
                                                 // Valor Recebido (para quando precisa dar troco)
-                                                TextInput::make('valor_recebido_movimento')
+                                                Money::make('valor_recebido_movimento')
+                                                    ->disabled()
                                                     ->label('Valor Recebido')
-                                                    ->prefix('R$')
-                                                    ->dehydrateStateUsing(function ($state) {
-                                                        // Remove formatação antes de salvar
-                                                        if (!$state)
-                                                            return 0;
-
-                                                        // Remove R$, pontos e converte vírgula em ponto
-                                                        $value = str_replace(['R$', '.', ' '], '', $state);
-                                                        $value = str_replace(',', '.', $value);
-
-                                                        return (float) $value;
-                                                    })
-                                                    ->formatStateUsing(function ($state) {
-                                                        // Formata para exibição
-                                                        if (!$state)
-                                                            return '0,00';
-
-                                                        return number_format((float) $state, 2, ',', '.');
-                                                    })
-                                                    ->placeholder('0,00')
                                                     ->live(true)
                                                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
                                                         $valorRecebido = floatval($state ?? 0);
@@ -588,73 +444,151 @@ class AluguelsTable
 
                                                         if ($valorRecebido > $valorPago) {
                                                             $troco = $valorRecebido - $valorPago;
-                                                            $set('troco_movimento', $troco);
+                                                            $set('troco_movimento', number_format($troco, 2, ',', '.'));
                                                         } else {
-                                                            $set('troco_movimento', 0);
+                                                            $set('troco_movimento', number_format(0, 2, ',', '.'));
                                                         }
                                                     })
                                                     ->helperText('Valor que está sendo entregue pelo cliente')
                                                     ->columnSpan(2),
 
                                                 // Troco
-                                                TextInput::make('troco_movimento')
+                                                Money::make('troco_movimento')
+                                                    ->disabled()
                                                     ->label('Troco')
-                                                    ->numeric()
-                                                    ->prefix('R$')
                                                     ->readOnly()
-                                                    ->default(0)
-                                                    //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1)
                                                     ->extraAttributes(['class' => 'text-red-600 font-semibold'])
                                                     ->helperText('Valor que será devolvido ao cliente')
                                                     ->columnSpan(2),
 
-                                                /*// Acréscimo (taxa)
-                                                TextInput::make('valor_acrescimo_movimento')
-                                                    ->label('Acréscimo')
-                                                    ->numeric()
-                                                    ->prefix('R$')
-                                                    ->readOnly()
-                                                    ->default(0)
-                                                    ->visible(fn(Get $get) => floatval($get('valor_acrescimo') ?? 0) > 0)
-                                                    ->helperText('Taxa do método de pagamento')
-                                                    ->columnSpan(1),
-
-                                                // Desconto (taxa)
-                                                TextInput::make('valor_desconto_movimento')
-                                                    ->label('Desconto')
-                                                    ->numeric()
-                                                    ->prefix('R$')
-                                                    ->readOnly()
-                                                    ->default(0)
-                                                    ->visible(fn(Get $get) => floatval($get('valor_desconto') ?? 0) > 0)
-                                                    ->helperText('Taxa do método de pagamento')
-                                                    ->columnSpan(1),*/
 
                                                 // Valor Total do Movimento
-                                                TextInput::make('valor_total_movimento')
+                                                Money::make('valor_total_movimento')
+                                                    ->disabled()
                                                     ->label('Total')
-                                                    ->dehydrateStateUsing(function ($state) {
-                                                        // Remove formatação antes de salvar
-                                                        if (!$state)
-                                                            return 0;
-
-                                                        // Remove R$, pontos e converte vírgula em ponto
-                                                        $value = str_replace(['R$', '.', ' '], '', $state);
-                                                        $value = str_replace(',', '.', $value);
-
-                                                        return (float) $value;
-                                                    })
-                                                    ->formatStateUsing(function ($state) {
-                                                        // Formata para exibição
-                                                        if (!$state)
-                                                            return '0,00';
-
-                                                        return number_format((float) $state, 2, ',', '.');
-                                                    })
-                                                    ->placeholder('0,00')
                                                     ->required()
-                                                    ->numeric()
-                                                    ->prefix('R$')
+                                                    ->readOnly()
+                                                    ->extraAttributes(['class' => 'font-bold text-lg text-green-600'])
+                                                    ->columnSpan(2),
+                                            ]),
+
+                                        Repeater::make('movimentos_novos')
+                                            ->collapsed()
+                                            ->addActionLabel('Adicionar Pagamento')
+                                            ->itemLabel(
+                                                fn(array $state): ?string =>
+                                                isset($state['valor_total_movimento'])
+                                                    ? 'Pagamento: R$ ' . number_format((float) $state['valor_total_movimento'], 2, ',', '.')
+                                                    : 'Novo Pagamento'
+                                            )
+                                            ->columns(4)
+                                            ->schema([
+                                                ToggleButtons::make('metodo_pagamento_id')
+                                                    ->label('Forma de Pagamento')
+                                                    ->required()
+                                                    ->live()
+                                                    ->options(fn() => MetodoPagamento::pluck('nome', 'id'))
+                                                    ->icons([
+                                                        1 => 'heroicon-o-banknotes',      // Dinheiro
+                                                        2 => 'heroicon-o-credit-card',    // Cartão Crédito
+                                                        3 => 'heroicon-o-credit-card',    // Cartão Débito
+                                                        4 => 'heroicon-o-qr-code',        // PIX
+                                                    ])
+                                                    ->colors([
+                                                        1 => 'success',
+                                                        2 => 'info',
+                                                        3 => 'warning',
+                                                        4 => 'primary',
+                                                    ])
+                                                    ->inline()
+                                                    ->default(1)
+                                                    ->columnSpan(4),
+                                                // Bandeira do Cartão (condicional)
+                                                Select::make('cartao_pagamento_id')
+                                                    ->label('Bandeira do Cartão')
+                                                    ->options(
+                                                        fn() => \App\Models\BandeiraCartaoPagamento::query()
+                                                            ->pluck('bandeira', 'id')
+                                                            ->toArray()
+                                                    )
+                                                    ->searchable()
+                                                    ->visible(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
+                                                    ->required(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3]))
+                                                    ->columnSpan(4),
+
+                                                // Número de Autorização (condicional)
+                                                TextInput::make('autorizacao')
+                                                    ->label('Nº Autorização')
+                                                    ->placeholder('000000')
+                                                    ->maxLength(20)
+                                                    ->visible(fn(Get $get) => in_array($get('metodo_pagamento_id'), [2, 3, 4]))
+                                                    ->columnSpan(4),
+
+
+
+                                                // Valor Pago pelo Cliente
+                                                Money::make('valor_pago_movimento')
+                                                    ->label('Valor Pago')
+                                                    ->required()
+                                                    ->live(true)
+                                                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                                                        $valorPago = floatval($state ?? 0);
+                                                        $metodoPagamentoId = $get('metodo_pagamento_id');
+
+                                                        // Buscar taxa do método de pagamento
+                                                        $metodo = MetodoPagamento::find($metodoPagamentoId);
+
+                                                        if ($metodo && $metodo->taxa_tipo !== 'N/A' && $metodo->taxa_percentual > 0) {
+                                                            $taxa = ($valorPago * $metodo->taxa_percentual) / 100;
+
+                                                            if ($metodo->taxa_tipo === 'ACRESCENTAR') {
+                                                                $set('valor_acrescimo', $taxa);
+                                                                $set('valor_desconto', 0);
+                                                            } elseif ($metodo->taxa_tipo === 'DESCONTAR') {
+                                                                $set('valor_desconto', $taxa);
+                                                                $set('valor_acrescimo', 0);
+                                                            }
+                                                        } else {
+                                                            $set('valor_acrescimo', 0);
+                                                            $set('valor_desconto', 0);
+                                                        }
+
+                                                        self::calcularTotalMovimento($set, $get);
+                                                    })
+                                                    ->helperText('Valor que será pago nesse pagamento')
+                                                    ->columnSpan(2),
+
+                                                // Valor Recebido (para quando precisa dar troco)
+                                                Money::make('valor_recebido_movimento')
+                                                    ->label('Valor Recebido')
+                                                    ->live(true)
+                                                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                                                        $valorRecebido = floatval($state ?? 0);
+                                                        $valorPago = floatval($get('valor_pago_movimento') ?? 0);
+
+                                                        if ($valorRecebido > $valorPago) {
+                                                            $troco = $valorRecebido - $valorPago;
+                                                            $set('troco_movimento', number_format($troco, 2, ',', '.'));
+                                                        } else {
+                                                            $set('troco_movimento', number_format(0, 2, ',', '.'));
+                                                        }
+                                                    })
+                                                    ->helperText('Valor que está sendo entregue pelo cliente')
+                                                    ->columnSpan(2),
+
+                                                // Troco
+                                                Money::make('troco_movimento')
+                                                    ->label('Troco')
+                                                    ->readOnly()
+                                                    ->extraAttributes(['class' => 'text-red-600 font-semibold'])
+                                                    ->helperText('Valor que será devolvido ao cliente')
+                                                    ->columnSpan(2),
+
+
+                                                // Valor Total do Movimento
+                                                Money::make('valor_total_movimento')
+                                                    ->label('Total')
+                                                    ->required()
                                                     ->readOnly()
                                                     ->extraAttributes(['class' => 'font-bold text-lg text-green-600'])
                                                     ->columnSpan(2),
@@ -666,25 +600,20 @@ class AluguelsTable
                                             }),
                                     ]),
                             ]),
-                        
+
                     ])
                     ->modalWidth(function (Aluguel $record): Width {
-
-                        
-                            return Width::FourExtraLarge;
-                        
-
+                        return Width::FourExtraLarge;
                     })
                     ->action(function (Aluguel $record, array $data) {
-
 
                         DB::beginTransaction();
 
                         try {
 
                             // 3️⃣ RE-CALCULAR os valores após o movimento
-                            $valorPagoAtualizado = $record->movimentos->sum('valor_total_movimento');
-                            $saldoAtual = max(0, $record->valor_total_aluguel - $valorPagoAtualizado);
+                            $valorPagoAtualizado = $data['valor_pago_aluguel'];
+                            $saldoAtual = max(0, $data['valor_total_aluguel'] - $valorPagoAtualizado);
 
 
                             // 4️⃣ Determinar STATUS conforme saldo ou pagamento
@@ -707,13 +636,14 @@ class AluguelsTable
                                 'valor_total_aluguel' => $data['valor_total_aluguel'],
                                 'valor_pago_aluguel' => $data['valor_pago_aluguel'],
                                 'valor_saldo_aluguel' => $data['valor_saldo_aluguel'],
+                                'movimentos' => $data['movimentos'],
                             ]);
 
                             // Liberar a carreta
                             $carreta = Carreta::find($record->carreta_id);
 
                             $carreta->update([
-                                'status' =>'disponivel'
+                                'status' => 'disponivel'
                             ]);
 
                             DB::commit();
@@ -725,15 +655,14 @@ class AluguelsTable
                                 ->title("Aluguel atualizado com sucesso!")
                                 ->body(
                                     $data['valor_pago_aluguel'] > 0
-                                    ? "Recebido R$ " . number_format($data['valor_pago_aluguel'], 2, ',', '.') . ". Status agora: {$novoStatus}."
-                                    : "Nenhum pagamento recebido. Status agora: {$novoStatus}."
+                                        ? "Recebido R$ " . number_format($data['valor_pago_aluguel'], 2, ',', '.') . ". Status agora: {$novoStatus}."
+                                        : "Nenhum pagamento recebido. Status agora: {$novoStatus}."
                                 )
                                 ->send();
-
                         } catch (\Exception $e) {
 
                             DB::rollBack();
-                            \Log::error('Erro ao finalizar aluguel: ' . $e->getMessage());
+                            Log::error('Erro ao finalizar aluguel: ' . $e->getMessage());
 
                             Notification::make()
                                 ->danger()
@@ -762,7 +691,7 @@ class AluguelsTable
                         $record->cancelar($data['motivo']);
 
                         // O Observer vai liberar a carreta automaticamente
-            
+
                         Notification::make()
                             ->success()
                             ->title('Aluguel cancelado')
@@ -773,8 +702,7 @@ class AluguelsTable
             ->toolbarActions([
                 /*BulkActionGroup::make([
                     DeleteBulkAction::make(),
-                ]),*/
-            ])
+                ]),*/])
             ->persistFiltersInSession()
             ->persistSortInSession()
             ->persistSearchInSession();
@@ -810,7 +738,7 @@ class AluguelsTable
 
         $valorTotal = $valorPago + $valorAcrescimo - $valorDesconto;
 
-        $set('valor_total_movimento', $valorTotal);
+        $set('valor_total_movimento', number_format($valorTotal, 2, ',', '.'));
     }
 
     /**
@@ -827,20 +755,6 @@ class AluguelsTable
                 }
             }
         }
-
-        $valorTotal = floatval($get('valor_total_aluguel') ?? 0);
-        $saldo = max(0, $valorTotal - $totalPago);
-
-        $set('valor_pago_aluguel', number_format($totalPago, 2, ',', '.'));
-        $set('valor_saldo_aluguel', number_format($saldo, 2, ',', '.'));
-    }
-
-    /**
-     * Atualiza os totais de pagamento no resumo
-     */
-    protected static function atualizarTotaisPagamento_2(Set $set, Get $get): void
-    {
-        $totalPago = floatval($get('valor_total_movimento_antigo')) ?? 0;
 
         $valorTotal = floatval($get('valor_total_aluguel') ?? 0);
         $saldo = max(0, $valorTotal - $totalPago);

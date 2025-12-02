@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => "#fa2d34",
                 'secondary' => "#faf205"
             ])
+            ->passwordReset()
             ->favicon(asset('logos/favicon.png'))
             ->sidebarCollapsibleOnDesktop()
             ->brandLogo(asset('logos/Logo LocSilva white.png'))

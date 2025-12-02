@@ -242,6 +242,8 @@ class AluguelForm
                                                 $valorFormatado = number_format((float) $carreta->valor_diaria, 2, ',', '.');
                                                 $set('valor_diaria', $valorFormatado);
                                                 $set('valor_total_aluguel', $valorFormatado);
+                                                $set('valor_saldo_aluguel', $valorFormatado);
+                                                
                                                 $set('carreta.foto', $carreta->foto);
                                                 $set('carreta.identificacao', $carreta->identificacao);
                                                 $set('carreta.status', $carreta->status);
@@ -724,7 +726,6 @@ class AluguelForm
                                                                     $set('troco_movimento', 0);
                                                                 }
                                                             })
-                                                            //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1) // Só para dinheiro
                                                             ->helperText('Valor que está sendo entregue pelo cliente')
                                                             ->columnSpan(2),
                                                         
@@ -735,33 +736,11 @@ class AluguelForm
                                                             ->prefix('R$')
                                                             ->readOnly()
                                                             ->default(0)
-                                                            //->visible(fn (Get $get) => $get('metodo_pagamento_id') == 1)
                                                             ->extraAttributes(['class' => 'text-red-600 font-semibold'])
                                                             ->helperText('Valor que será devolvido ao cliente')
                                                             ->columnSpan(1),
+
                                                         
-                                                        /*// Acréscimo (taxa)
-                                                        TextInput::make('valor_acrescimo_movimento')
-                                                            ->label('Acréscimo')
-                                                            ->numeric()
-                                                            ->prefix('R$')
-                                                            ->readOnly()
-                                                            ->default(0)
-                                                            ->visible(fn (Get $get) => floatval($get('valor_acrescimo') ?? 0) > 0)
-                                                            ->helperText('Taxa do método de pagamento')
-                                                            ->columnSpan(1),
-                                                        
-                                                        // Desconto (taxa)
-                                                        TextInput::make('valor_desconto_movimento')
-                                                            ->label('Desconto')
-                                                            ->numeric()
-                                                            ->prefix('R$')
-                                                            ->readOnly()
-                                                            ->default(0)
-                                                            ->visible(fn (Get $get) => floatval($get('valor_desconto') ?? 0) > 0)
-                                                            ->helperText('Taxa do método de pagamento')
-                                                            ->columnSpan(1),
-                                                        */
                                                         // Valor Total do Movimento
                                                         TextInput::make('valor_total_movimento')
                                                             ->label('Total')

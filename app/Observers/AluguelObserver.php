@@ -57,26 +57,36 @@ class AluguelObserver
                 'carreta_id' => $aluguel->carreta_id,
             ]);
         }
+        // 2. Alterar a descricao do movimento de caixa associado, excluir movimentos com valor zero e buscar o caixa aberto e perguntar o ususario se ele quer vincular no movimento
+        if ($aluguel->movimentos()->exists()) {
+            foreach ($aluguel->movimentos as $movimento) {
+                // Excluir movimentos com valor zero
+                if ($movimento->valor_total_movimento <= 0) {
+                    $movimento->delete();
 
-        // 2. Registrar movimento no caixa se houver pagamento
-        /*if ($aluguel->valor_pago > 0) {
-            MovimentoCaixa::create([
-                'caixa_id' => $aluguel->caixa_id,
-                'aluguel_id' => $aluguel->id,
-                'tipo' => 'entrada',
-                'valor' => $aluguel->valor_pago,
-                'descricao' => "Pagamento inicial - Aluguel #{$aluguel->id} - {$aluguel->cliente->nome}",
-                'data_movimento' => now(),
-            ]);
+                    Log::info("Movimento de caixa com valor zero excluído", [
+                        'movimento_id' => $movimento->id,
+                        'aluguel_id' => $aluguel->id,
+                    ]);
+                    continue;
+                }
 
-            // Atualizar total de entradas do caixa
-            $aluguel->caixa->increment('total_entradas', $aluguel->valor_pago);
+                // Alterar descrição do movimento
+                $movimento->descricao = "Movimento associado ao aluguel ID {$aluguel->id}";
+                $movimento->save();
 
-            Log::info("Movimento de caixa registrado", [
-                'aluguel_id' => $aluguel->id,
-                'valor' => $aluguel->valor_pago,
-            ]);
-        }*/
+                Log::info("Descrição do movimento de caixa atualizada", [
+                    'movimento_id' => $movimento->id,
+                    'aluguel_id' => $aluguel->id,
+                ]);
+            }
+        }else{
+             Log::info("Nenhum movimento de caixa associado ao aluguel", [
+                        'aluguel_id' => $aluguel->id,
+                    ]);
+        }
+
+
     }
 
     /**
@@ -85,8 +95,8 @@ class AluguelObserver
     public function updating(Aluguel $aluguel): void
     {
         // Recalcular saldo se valor_pago ou valor_total mudou
-        if ($aluguel->isDirty(['valor_pago', 'valor_total'])) {
-            $aluguel->valor_saldo = $aluguel->valor_total - $aluguel->valor_pago;
+        if ($aluguel->isDirty(['valor_pago_aluguel', 'valor_total_aluguel'])) {
+            $aluguel->valor_saldo_aluguel = $aluguel->valor_total_aluguel - $aluguel->valor_pago_aluguel;
         }
 
         // Detectar mudança de status
@@ -123,31 +133,10 @@ class AluguelObserver
                     ]);
                 }
             }
-        }
-
-        // Registrar pagamento adicional no caixa
-        if ($aluguel->isDirty('valor_pago') && $aluguel->caixa_id) {
-            $valorAnterior = $aluguel->getOriginal('valor_pago');
-            $valorAtual = $aluguel->valor_pago;
-            $diferenca = $valorAtual - $valorAnterior;
-
-            if ($diferenca > 0) {
-                MovimentoCaixa::create([
-                    'caixa_id' => $aluguel->caixa_id,
-                    'aluguel_id' => $aluguel->id,
-                    'tipo' => 'entrada',
-                    'valor' => $diferenca,
-                    'descricao' => "Pagamento adicional - Aluguel #{$aluguel->id}",
-                    'data_movimento' => now(),
-                ]);
-
-                $aluguel->caixa->increment('total_entradas', $diferenca);
-
-                Log::info("Pagamento adicional registrado", [
-                    'aluguel_id' => $aluguel->id,
-                    'valor' => $diferenca,
-                ]);
-            }
+        }else{
+             Log::info("Nenhum movimento de caixa associado ao aluguel", [
+                        'aluguel_id' => $aluguel->id,
+                    ]);
         }
     }
 
@@ -156,7 +145,30 @@ class AluguelObserver
      */
     public function updated(Aluguel $aluguel): void
     {
-        // Você pode adicionar lógica adicional aqui se necessário
+        // 2. Alterar a descricao do movimento de caixa associado, excluir movimentos com valor zero e buscar o caixa aberto e perguntar o ususario se ele quer vincular no movimento
+        if ($aluguel->movimentos()->exists()) {
+            foreach ($aluguel->movimentos as $movimento) {
+                // Excluir movimentos com valor zero
+                if ($movimento->valor_total_movimento <= 0) {
+                    $movimento->delete();
+
+                    Log::info("Movimento de caixa com valor zero excluído", [
+                        'movimento_id' => $movimento->id,
+                        'aluguel_id' => $aluguel->id,
+                    ]);
+                    continue;
+                }
+
+                // Alterar descrição do movimento
+                $movimento->descricao = "Movimento associado ao aluguel ID {$aluguel->id}";
+                $movimento->save();
+
+                Log::info("Descrição do movimento de caixa atualizada", [
+                    'movimento_id' => $movimento->id,
+                    'aluguel_id' => $aluguel->id,
+                ]);
+            }
+        }
     }
 
     /**
