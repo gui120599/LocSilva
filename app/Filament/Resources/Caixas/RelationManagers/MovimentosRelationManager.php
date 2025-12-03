@@ -286,8 +286,9 @@ class MovimentosRelationManager extends RelationManager
                     ->recordSelectSearchColumns(['descricao', 'id', 'valor_total_movimento'])
                     ->multiple()
                     ->preloadRecordSelect()
-                    ->recordSelectOptionsQuery(fn(Builder $query) => $query
-                        ->where('caixa_id', null)
+                    ->recordSelectOptionsQuery(
+                        fn(Builder $query) => $query
+                            ->where('caixa_id', null)
                     ),
                 CreateAction::make()
                     ->schema([
@@ -357,6 +358,7 @@ class MovimentosRelationManager extends RelationManager
                                         $metodoId = $get('metodo_pagamento_id');
                                         return in_array($metodoId, [2, 3, 4]);
                                     }),
+                                    
                                 TextInput::make('valor_pago_movimento')
                                     ->visible(fn($get) => $get('tipo') === 'entrada')
                                     ->disabled(fn($get) => $get('tipo') === 'saida')
@@ -452,13 +454,13 @@ class MovimentosRelationManager extends RelationManager
             ])
             ->recordActions([
                 EditAction::make()
-                ->visible(fn($record) => $record->descricao !== 'Saldo Inicial'),
+                    ->visible(fn($record) => $record->descricao !== 'Saldo Inicial'),
                 DissociateAction::make()
-                ->visible(fn($record) => $record->descricao !== 'Saldo Inicial'),
+                    ->visible(fn($record) => $record->descricao !== 'Saldo Inicial'),
                 DeleteAction::make()
-                ->visible(fn($record) => 
-                    $record->aluguel_id === null 
-                    && $record->descricao !== 'Saldo Inicial'),
+                    ->visible(fn($record) =>
+                    $record->aluguel_id === null
+                        && $record->descricao !== 'Saldo Inicial'),
                 ForceDeleteAction::make(),
                 RestoreAction::make(),
             ])

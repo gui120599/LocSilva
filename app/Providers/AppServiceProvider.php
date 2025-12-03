@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Aluguel;
+use App\Models\MovimentoCaixa;
 use App\Observers\AluguelObserver;
+use App\Observers\MovimentoCaixaObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,5 +24,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Aluguel::observe(AluguelObserver::class);
+        MovimentoCaixa::observe(MovimentoCaixaObserver::class);
     }
 }

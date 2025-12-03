@@ -155,11 +155,7 @@ class CaixasTable
                                         MovimentoCaixa::where('caixa_id', null)->get()
                                             ->mapWithKeys(fn($value) => [
                                                 $value->id =>
-                                                    "{$value->tipo} - {$value->descricao} - R$ "
-                                                    . number_format($value->valor_total_movimento, 2, ',', '.')
-                                                    . " - Aluguel: {$value->aluguel_id} - Cliente: "
-                                                    . optional(optional($value->aluguel)->cliente)->nome
-
+                                                    "{$value->tipo} - {$value->descricao}"
                                             ])
                                     )
 
