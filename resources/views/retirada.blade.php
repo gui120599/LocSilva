@@ -85,7 +85,8 @@
                             {{ $aluguel->carreta->placa }}
                         </span>
                     </p>
-                    <p><strong>Descrição:</strong> {{ $aluguel->carreta->marca ." ". $aluguel->carreta->modelo ." ". $aluguel->carreta->ano }}</p>
+                    <p><strong>Descrição:</strong> {{ $aluguel->carreta->marca ." ". $aluguel->carreta->modelo ." ". $aluguel->carreta->ano ?? " N/A" }}</p>
+                    <p><strong>Capacidade de carga (kg):</strong> {{ number_format($aluguel->carreta->capacidade_carga,0,) ?? "N/A" }}</p>
                 </div>
             </div>
 
