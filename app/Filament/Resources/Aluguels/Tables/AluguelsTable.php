@@ -732,9 +732,9 @@ class AluguelsTable
                                 $aluguelAtivo = Aluguel::where('carreta_id', $record->carreta_id)
                                     ->where('id', '!=', $record->id) // Excluir o aluguel atual
                                     ->whereIn('status', ['ativo']) // Status que indicam uso da carreta
-                                    ->exists();
+                                    ->first();
 
-                                if (!$aluguelAtivo) {
+                                if (empty($aluguelAtivo)) {
                                     // Não há outro aluguel ativo, pode liberar a carreta
                                     $record->carreta->update(['status' => 'disponivel']);
 
@@ -746,7 +746,7 @@ class AluguelsTable
                                     ]);
                                 } else {
                                     // Há outro aluguel ativo, manter carreta como alugada
-                                    Log::warning("⚠️ Carreta não liberada - em uso por outro aluguel", [
+                                    Log::warning("⚠️ Carreta em uso por outro aluguel", [
                                         'carreta_id' => $record->carreta_id,
                                         'carreta_identificacao' => $record->carreta->identificacao,
                                         'aluguel_atual_id' => $record->id,
@@ -756,7 +756,7 @@ class AluguelsTable
                                     Notification::make()
                                         ->warning()
                                         ->title('Carreta não liberada')
-                                        ->body('A carreta está sendo utilizada em outro aluguel ativo.')
+                                        ->body("A carreta está sendo utilizada no Aluguel #{$aluguelAtivo->id} ativo.")
                                         ->send();
                                 }
                             }
@@ -771,7 +771,7 @@ class AluguelsTable
                             }
 
                             if ($saldoAtual > 0) {
-                                $mensagemCorpo[] = "Status {$novoStatus}, Carreta {$record->carreta->identificacao} liberada e Saldo restante: R$ " . number_format($saldoAtual, 2, ',', '.') . "Carreta liberada.";
+                                $mensagemCorpo[] = "Status {$novoStatus}, Carreta {$record->carreta->identificacao} liberada e Saldo restante: R$ " . number_format($saldoAtual, 2, ',', '.');
                             } else {
                                 $mensagemCorpo[] = "✅ Aluguel finalizado e carreta liberada!";
                             }

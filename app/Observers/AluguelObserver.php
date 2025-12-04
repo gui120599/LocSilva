@@ -56,7 +56,7 @@ class AluguelObserver
             ]);
 
             // Se mudou para finalizado ou cancelado, liberar carreta
-            if (in_array($statusNovo, ['finalizado', 'cancelado'])) {
+            if (in_array($statusNovo, ['cancelado'])) {
                 if ($aluguel->carreta) {
                     $aluguel->carreta->update(['status' => 'disponivel']);
 
