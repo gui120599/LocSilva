@@ -85,7 +85,7 @@
                             {{ $aluguel->carreta->placa }}
                         </span>
                     </p>
-                    <p><strong>Descrição:</strong> {{ $aluguel->carreta->descricao ?? 'N/A' }}</p>
+                    <p><strong>Descrição:</strong> {{ $aluguel->carreta->marca ." ". $aluguel->carreta->modelo ." ". $aluguel->carreta->ano }}</p>
                 </div>
             </div>
 
