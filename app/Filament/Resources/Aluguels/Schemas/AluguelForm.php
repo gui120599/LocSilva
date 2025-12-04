@@ -436,7 +436,7 @@ class AluguelForm
 
                                             // Hidden: User ID
                                             Hidden::make('user_id')
-                                                ->default(fn() => auth()->id()),
+                                                ->default(fn() => filament()->auth()->id()),
 
                                             // Hidden: Tipo (sempre entrada para aluguel)
                                             Hidden::make('tipo')

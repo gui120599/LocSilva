@@ -75,7 +75,7 @@ class MovimentosRelationManager extends RelationManager
                             ->relationship('user', 'name')
                             ->disabled()
                             ->dehydrated()
-                            ->default(auth()->user()->id),
+                            ->default(filament()->auth()->id()),
                         ToggleButtons::make('metodo_pagamento_id')
                             ->live()
                             ->label('Método do Pagamento')

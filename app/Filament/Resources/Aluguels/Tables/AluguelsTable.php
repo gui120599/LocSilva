@@ -155,6 +155,24 @@ class AluguelsTable
             ])
             ->recordActions([
 
+                Action::make('print')
+                    ->label('Retirada')
+                    ->icon('heroicon-s-printer')
+                    ->color('primary')
+                    // A CHAVE: Passar o registro ($record) para a rota dentro do closure
+                    ->url(fn($record): string => route('print-retirada', ['id' => $record->id]))
+                    ->openUrlInNewTab()
+                    ->visible(fn($record) => in_array($record->status, ['ativo', 'pendente'])),
+
+                /*Action::make('print')
+                    ->label('devolucao')
+                    ->icon('heroicon-s-printer')
+                    ->color('primary')
+                    // A CHAVE: Passar o registro ($record) para a rota dentro do closure
+                    ->url(fn($record): string => route('print-devolucao', ['id' => $record->id]))
+                    ->openUrlInNewTab()
+                    ->visible(fn($record) => in_array($record->status, ['ativo'])),*/
+
                 Action::make('Recibo')
                     ->url(fn($record) => \App\Filament\Resources\Aluguels\AluguelResource::getUrl('aluguel', ['record' => $record])),
 
@@ -666,7 +684,7 @@ class AluguelsTable
                                     }
                                     // Criar o movimento
                                     $novoMovimento = $record->movimentos()->create([
-                                        'user_id' => auth()->id(),
+                                        'user_id' => filament()->auth()->id(),
                                         'tipo' => 'entrada',
                                         'metodo_pagamento_id' => $movimento['metodo_pagamento_id'] ?? null,
                                         'cartao_pagamento_id' => $movimento['cartao_pagamento_id'] ?? null,
