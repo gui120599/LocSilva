@@ -536,8 +536,8 @@ class AluguelForm
                                                 ->label('Valor Recebido')
                                                 ->live(true)
                                                 ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                                                    $valorRecebido = floatval($state ?? 0);
-                                                    $valorPago = floatval($get('valor_pago_movimento') ?? 0);
+                                                    $valorRecebido = self::normalizeMoney($state ?? 0);
+                                                    $valorPago = self::normalizeMoney($get('valor_pago_movimento'));
 
                                                     if ($valorRecebido > $valorPago) {
                                                         $troco = $valorRecebido - $valorPago;
