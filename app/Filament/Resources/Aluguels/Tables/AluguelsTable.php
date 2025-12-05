@@ -7,6 +7,7 @@ use App\Models\BandeiraCartaoPagamento;
 use App\Models\Carreta;
 use App\Models\MetodoPagamento;
 use Carbon\Carbon;
+use Dom\Text;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -40,6 +41,12 @@ use Illuminate\Support\Facades\Log;
 use Leandrocfe\FilamentPtbrFormFields\Currencies\BRL;
 use Leandrocfe\FilamentPtbrFormFields\Money;
 use Filament\Schemas\Components\Wizard;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\QueryBuilder;
+use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint\Operators\IsRelatedToOperator;
+use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
+use Illuminate\Validation\Rules\Date;
 
 class AluguelsTable
 {
@@ -74,6 +81,11 @@ class AluguelsTable
                 TextColumn::make('cliente.nome')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('cliente.cpf_cnpj')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
                 TextColumn::make('carreta.identificacao')
                     ->numeric()
                     ->sortable()
@@ -128,10 +140,14 @@ class AluguelsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('id')
+                    ->label('ID do Aluguel')
+                    ->searchable()
+                    ->options(
+                        fn() => Aluguel::pluck('id', 'id')->toArray()
+                    ),
                 SelectFilter::make('status')
-                    ->multiple()
                     ->label('Status')
-                    //->default(['ativo', 'pendente'])
                     ->options([
                         'ativo' => 'Ativo',
                         'finalizado' => 'Finalizado',
@@ -147,11 +163,45 @@ class AluguelsTable
                             ->label('Data de Retirada Até')
                             ->placeholder('Data de Retirada Até'),
                     ]),
-                SelectFilter::make('cliente_id')
+                QueryBuilder::make('carreta.identificacao')
+                    ->label('Identificação da Carreta')
+                    ->constraints([
+                        TextConstraint::make('carreta.identificacao')
+                            ->label('Identificação da Carreta')
+                            ->icon('heroicon-o-truck'),
+                    ]),
+                QueryBuilder::make('cliente')
                     ->label('Cliente')
-                    ->relationship('cliente', 'nome')
-                    ->multiple()
-                    ->searchable()->preload(10)
+                    ->constraints([
+                        TextConstraint::make('cliente.nome')
+                            ->label('Nome do Cliente')
+                            ->icon('heroicon-o-user'),
+                        TextConstraint::make('cliente.cpf_cnpj')
+                            ->label('CPF/CNPJ do Cliente')
+                            ->icon('heroicon-o-document-text'),
+                    ]),
+
+
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(4)
+            ->filtersFormSchema(fn(array $filters): array => [
+                Section::make('Aluguel')
+                    ->columnSpanFull()
+                    ->columns(4)
+                    ->schema([
+                        $filters['id'] ?? null,
+                        $filters['status'] ?? null,
+                        $filters['data_retirada'] ?? null,
+                        $filters['carreta.identificacao'] ?? null,
+
+
+                    ]),
+                Section::make('Cliente')
+                    ->columnSpanFull()
+                    ->columns(4)
+                    ->schema([
+                        $filters['cliente'] ?? null,
+                    ]),
             ])
             ->recordActions([
 
