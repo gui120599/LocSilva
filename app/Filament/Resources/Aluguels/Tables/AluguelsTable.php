@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Aluguels\Tables;
 
+use App\Helper\FormatHelper;
 use App\Models\Aluguel;
 use App\Models\BandeiraCartaoPagamento;
 use App\Models\Carreta;
@@ -46,7 +47,11 @@ use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint\Operators\IsRelatedToOperator;
 use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
+use Filament\Tables\Filters\TrashedFilter;
 use Illuminate\Validation\Rules\Date;
+use Leandrocfe\FilamentPtbrFormFields\Document;
+use Leandrocfe\FilamentPtbrFormFields\PhoneNumber;
+use Leandrocfe\FilamentPtbrFormFields\PtbrCpfCnpj;
 
 class AluguelsTable
 {
@@ -58,6 +63,7 @@ class AluguelsTable
                     ->label('ID')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('status')
                     ->tooltip(fn(string $state): string => match ($state) {
                         'ativo' => 'ATIVO',
@@ -83,39 +89,51 @@ class AluguelsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('cliente.cpf_cnpj')
+                    ->label('CPF/CNPJ')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->formatStateUsing(fn($state) => FormatHelper::formatCpfCnpj($state)),
+
+                TextColumn::make('cliente.telefone')
+                    ->label('Telefone')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->formatStateUsing(fn($state) => FormatHelper::formatTelefone($state)),
+
                 TextColumn::make('carreta.identificacao')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('data_retirada')
-                    ->label('Retirada')
-                    ->color('success')
-                    ->date('d/m/Y')
+                    ->label('Data Retirada')
+                    ->date('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('data_devolucao_prevista')
                     ->label('Devolução Prevista')
-                    ->color('warning')
-                    ->date('d/m/Y')
+                    ->date('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('data_devolucao_real')
-                    ->date('d/m/Y')
+                    ->label('Devolução Real')
+                    ->date('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('quantidade_diarias')
                     ->label('Diárias')
                     ->description('Dias')
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('valor_diaria')
                     ->money('BRL')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('valor_total_aluguel')
                     ->money('BRL')
                     ->sortable(),
@@ -127,26 +145,25 @@ class AluguelsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
+                    ->label('Criado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Atualizado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('deleted_at')
+                    ->label('Deletado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('id')
-                    ->label('ID do Aluguel')
-                    ->searchable()
-                    ->options(
-                        fn() => Aluguel::pluck('id', 'id')->toArray()
-                    ),
+
                 SelectFilter::make('status')
+                    ->multiple()
                     ->label('Status')
                     ->options([
                         'ativo' => 'Ativo',
@@ -154,55 +171,209 @@ class AluguelsTable
                         'pendente' => 'Pendente',
                         'cancelado' => 'Cancelado',
                     ]),
-                Filter::make('data_retirada')
+
+                Filter::make('diarias')
                     ->schema([
+                        TextInput::make('quantidade_diarias')
+                            ->label('QTD de Diárias')
+                            ->placeholder('Digite a quantidade de diárias'),
+                    ]),
+
+                Filter::make('data_retirada')
+                    ->label('Data de Retirada')
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->schema([
+                        // Somente data
                         DatePicker::make('data_retirada_de')
-                            ->label('Data de Retirada De')
-                            ->placeholder('Data de Retirada De'),
+                            ->label('Data de Retirada (De)'),
+
+                        // Somente data
                         DatePicker::make('data_retirada_ate')
-                            ->label('Data de Retirada Até')
-                            ->placeholder('Data de Retirada Até'),
-                    ]),
-                QueryBuilder::make('carreta.identificacao')
-                    ->label('Identificação da Carreta')
-                    ->constraints([
-                        TextConstraint::make('carreta.identificacao')
-                            ->label('Identificação da Carreta')
-                            ->icon('heroicon-o-truck'),
-                    ]),
-                QueryBuilder::make('cliente')
+                            ->label('Data de Retirada (Até)'),
+
+                        // Com hora
+                        /*DateTimePicker::make('data_retirada_datetime_de')
+                            ->label('Data/Hora de Retirada (De)'),
+
+                        // Com hora
+                        DateTimePicker::make('data_retirada_datetime_ate')
+                            ->label('Data/Hora de Retirada (Até)'),*/
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query
+
+                            // 🔹 FILTRO POR DATA (somente data)
+                            ->when($data['data_retirada_de'] ?? null, function ($query, $date) {
+                                $query->whereDate('data_retirada', '>=', $date);
+                            })
+                            ->when($data['data_retirada_ate'] ?? null, function ($query, $date) {
+                                $query->whereDate('data_retirada', '<=', $date);
+                            });
+
+                            // 🔹 FILTRO POR DATETIME (com hora)
+                           /* ->when($data['data_retirada_datetime_de'] ?? null, function ($query, $dateTime) {
+                                $query->where('data_retirada', '>=', $dateTime);
+                            })
+                            ->when($data['data_retirada_datetime_ate'] ?? null, function ($query, $dateTime) {
+                                $query->where('data_retirada', '<=', $dateTime);
+                            });*/
+                    }),
+
+
+
+                Filter::make('data_devolucao_real')
+                    ->label('Data de Devolução Real')
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->schema([
+                        // Somente data
+                        DatePicker::make('data_devolucao_real_de')
+                            ->label('Devolução Real (De)'),
+
+                        // Somente data
+                        DatePicker::make('data_devolucao_real_ate')
+                            ->label('Devolução Real (Até)'),
+
+                        // Com hora
+                       /* DateTimePicker::make('data_devolucao_real_datetime_de')
+                            ->label('Data/Hora de Devolução (De)'),
+
+                        // Com hora
+                        DateTimePicker::make('data_devolucao_real_datetime_ate')
+                            ->label('Data/Hora de Devolução (Até)'),*/
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query
+
+                            // 🔹 FILTRO POR DATA
+                            ->when($data['data_devolucao_real_de'] ?? null, function ($query, $date) {
+                                $query->whereDate('data_devolucao_real', '>=', $date);
+                            })
+                            ->when($data['data_devolucao_real_ate'] ?? null, function ($query, $date) {
+                                // acrescenta 23:59:59 para não cortar registros do final do dia
+                                $query->where('data_devolucao_real', '<=', $date . ' 23:59:59');
+                            });
+
+                            // 🔹 FILTRO POR DATETIME
+                           /* ->when($data['data_devolucao_real_datetime_de'] ?? null, function ($query, $dateTime) {
+                                $query->where('data_devolucao_real', '>=', $dateTime);
+                            })
+                            ->when($data['data_devolucao_real_datetime_ate'] ?? null, function ($query, $dateTime) {
+                                $query->where('data_devolucao_real', '<=', $dateTime);
+                            });*/
+                    }),
+
+                Filter::make('id_aluguel')
+                    ->label('ID do aluguel')
+                    ->schema([
+                        TextInput::make('id_aluguel')
+                            ->label('ID do Aluguel')
+                            ->placeholder('Digite o ID do Aluguel'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when($data['id_aluguel'] ?? null, function (Builder $query, $idAluguel) {
+                            $query->where('id', $idAluguel);
+                        });
+                    }),
+
+                Filter::make('cliente')
                     ->label('Cliente')
-                    ->constraints([
-                        TextConstraint::make('cliente.nome')
-                            ->label('Nome do Cliente')
-                            ->icon('heroicon-o-user'),
-                        TextConstraint::make('cliente.cpf_cnpj')
-                            ->label('CPF/CNPJ do Cliente')
-                            ->icon('heroicon-o-document-text'),
-                    ]),
+                    ->schema([
+                        Grid::make()
+                            ->columns(6)
+                            ->components([
+                                TextInput::make('id_cliente')
+                                    ->label('ID do Cliente')
+                                    ->placeholder('Digite o id do cliente')
+                                    ->columnSpan(1),
+
+                                TextInput::make('cliente_nome')
+                                    ->label('Nome do Cliente')
+                                    ->placeholder('Digite o nome do cliente')
+                                    ->columnSpan(3),
+
+                                Document::make('cliente_cpf_cnpj')
+                                    ->label('CPF/CNPJ')
+                                    ->dynamic()
+                                    ->columnSpan(2)
+                                    ->placeholder('Digite o CPF ou CNPJ do cliente'),
+
+                                PhoneNumber::make('telefone')
+                                    ->label('Telefone')
+                                    ->columnSpan(3)
+                                    ->placeholder('(99) 99999-9999')
+                                    ->mask('(99) 9999-9999'),
+                            ])
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when($data['cliente_nome'] ?? null, function (Builder $query, $clienteNome) {
+                            $query->whereHas('cliente', function (Builder $query) use ($clienteNome) {
+                                $query->where('nome', 'like', '%' . $clienteNome . '%');
+                            });
+                        })->when(preg_replace("/\D/", "", $data['cliente_cpf_cnpj']) ?? null, function (Builder $query, $clienteCpfCnpj) {
+                            $query->whereHas('cliente', function (Builder $query) use ($clienteCpfCnpj) {
+                                $query->where('cpf_cnpj', 'like', '%' . $clienteCpfCnpj . '%');
+                            });
+                        })->when($data['id_cliente'] ?? null, function (Builder $query, $idCliente) {
+                            $query->whereHas('cliente', function (Builder $query) use ($idCliente) {
+                                $query->where('id', $idCliente);
+                            });
+                        })->when(preg_replace("/\D/", "", $data['telefone']) ?? null, function (Builder $query, $clienteTelefone) {
+                            $query->whereHas('cliente', function (Builder $query) use ($clienteTelefone) {
+                                $query->where('telefone', 'like', '%' . $clienteTelefone . '%');
+                            });
+                        });
+                    }),
+
+                Filter::make('carreta')
+                    ->schema([
+                        TextInput::make('carreta_identificacao')
+                            ->label('Nº de Identificação')
+                            ->placeholder('Digite o número de identificação da carreta'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['carreta_identificacao'] ?? null, function (Builder $query, $carretaIdentificacao) {
+                                $query->whereHas('carreta', function (Builder $query) use ($carretaIdentificacao) {
+                                    $query->where('identificacao', $carretaIdentificacao);
+                                });
+                            });
+                    }),
+
+
+
 
 
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersFormColumns(4)
             ->filtersFormSchema(fn(array $filters): array => [
                 Section::make('Aluguel')
+                    ->collapsed()
                     ->columnSpanFull()
                     ->columns(4)
                     ->schema([
-                        $filters['id'] ?? null,
+                        $filters['id_aluguel'] ?? null,
+                        $filters['diarias'] ?? null,
                         $filters['status'] ?? null,
                         $filters['data_retirada'] ?? null,
-                        $filters['carreta.identificacao'] ?? null,
-
-
+                        $filters['data_devolucao_real'] ?? null,
                     ]),
                 Section::make('Cliente')
+                    ->collapsed()
                     ->columnSpanFull()
-                    ->columns(4)
                     ->schema([
                         $filters['cliente'] ?? null,
                     ]),
+
+                Section::make('Carreta')
+                    ->collapsed()
+                    ->columnSpanFull()
+                    ->schema([
+                        $filters['carreta'] ?? null,
+                    ]),
             ])
+            ->deferFilters(false)
             ->recordActions([
 
                 Action::make('print')
