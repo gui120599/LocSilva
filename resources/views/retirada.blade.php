@@ -15,14 +15,14 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
-
     @endif
 </head>
 
 <body>
     <div class="p-1 max-w-6xl mx-auto ring-1 ring-gray-100/70">
         <!-- Header Principal e Logo -->
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-1 border-gray-200 pb-2 mb-2">
+        <header
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-1 border-gray-200 pb-2 mb-2">
             <div class="space-y-1">
                 <h5 class="text-lg font-extrabold text-gray-800">
                     RECIBO DE RETIRADA
@@ -59,7 +59,7 @@
 
         <!-- Grid: Cliente e Veículo -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-            
+
             <!-- Cliente -->
             <div class="p-2 border border-gray-200 bg-white rounded-lg">
                 <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
@@ -80,13 +80,16 @@
                 </h5>
                 <div class="space-y-1 text-sm text-gray-700 text-[10px]">
                     <p><strong>Identificação:</strong> {{ $aluguel->carreta->identificacao }}</p>
-                    <p><strong>Placa:</strong> 
+                    <p><strong>Placa:</strong>
                         <span class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
                             {{ $aluguel->carreta->placa }}
                         </span>
                     </p>
-                    <p><strong>Descrição:</strong> {{ $aluguel->carreta->marca ." ". $aluguel->carreta->modelo ." ". $aluguel->carreta->ano ?? " N/A" }}</p>
-                    <p><strong>Capacidade de carga (kg):</strong> {{ number_format($aluguel->carreta->capacidade_carga,0,) ?? "N/A" }}</p>
+                    <p><strong>Descrição:</strong>
+                        {{ $aluguel->carreta->marca . ' ' . $aluguel->carreta->modelo . ' ' . $aluguel->carreta->ano ?? ' N/A' }}
+                    </p>
+                    <p><strong>Capacidade de carga (kg):</strong>
+                        {{ number_format($aluguel->carreta->capacidade_carga, 0) ?? 'N/A' }}</p>
                 </div>
             </div>
 
@@ -125,7 +128,8 @@
             <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
                     <span class="text-gray-700">Valor da Diária:</span>
-                    <span class="font-semibold">R$ {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</span>
+                    <span class="font-semibold">R$
+                        {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-700">Quantidade de Diárias:</span>
@@ -143,75 +147,111 @@
         <!-- REGRAS E CONDIÇÕES - DESTAQUE -->
         <div class="p-2 mb-2 border-2 border-red-400 bg-red-50 rounded-lg">
             <h5 class="font-extrabold text-red-800 mb-2 text-center text-sm flex items-center justify-center">
-                <x-heroicon-s-exclamation-triangle class="w-6 h-6 mr-2" /> 
+                <x-heroicon-s-exclamation-triangle class="w-6 h-6 mr-2" />
                 REGRAS E CONDIÇÕES IMPORTANTES
             </h5>
-            
-            <div class="space-y-2 text-[8px] text-gray-800">
-                <div class="flex items-start">
-                    <span class="text-red-600 font-bold mr-2">•</span>
-                    <p><strong>NÃO recebemos carreta em horário de almoço (12h-13h) ou fora do horário comercial.</strong></p>
+
+            <!-- GRID EM 2 COLUNAS -->
+            <div class="grid grid-cols-2 gap-3 text-[8px] text-gray-800">
+
+                <!-- COLUNA 1 -->
+                <div class="space-y-2">
+
+                    <div class="flex items-start">
+                        <span class="text-red-600 font-bold mr-2">•</span>
+                        <p><strong>NÃO recebemos carreta em horário de almoço (12h-13h) ou fora do horário
+                                comercial.</strong></p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-red-600 font-bold mr-2">•</span>
+                        <p><strong>NÃO é permitido deixar a carreta sem dar baixa.</strong></p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-red-600 font-bold mr-2">•</span>
+                        <p><strong>NÃO atendemos após ou antes do horário comercial.</strong></p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-blue-600 font-bold mr-2">✓</span>
+                        <p>A sua diária tem <strong>24 horas + 20 minutos de tolerância.</strong></p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-blue-600 font-bold mr-2">✓</span>
+                        <p><strong>NÃO</strong> é aplicado nenhum desconto caso a devolução seja antes das 24 horas.</p>
+                    </div>
+
+                     <div class="flex items-start">
+                        <span class="text-blue-600 font-bold mr-2">✓</span>
+                        <p>Desconto <strong>somente a partir de 3 diárias.</strong></p>
+                    </div>
+
                 </div>
-                
-                <div class="flex items-start">
-                    <span class="text-red-600 font-bold mr-2">•</span>
-                    <p><strong>NÃO é permitido deixar a carreta sem dar baixa.</strong></p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-red-600 font-bold mr-2">•</span>
-                    <p><strong>NÃO atendemos após ou antes do horário comercial.</strong></p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-blue-600 font-bold mr-2">✓</span>
-                    <p>A sua diária tem <strong>24 horas + 20 minutos de tolerância.</strong></p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-blue-600 font-bold mr-2">✓</span>
-                    <p><strong>NÃO</strong> é aplicado nenhum desconto caso a devolução seja antes das 24 horas.</p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-blue-600 font-bold mr-2">✓</span>
-                    <p>Desconto <strong>somente a partir de 3 diárias.</strong></p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-blue-600 font-bold mr-2">✓</span>
-                    <p>Precisa ficar muitos dias? <strong>É necessário combinar a quantidade prevista na retirada.</strong></p>
-                </div>
-                
-                <div class="flex items-start">
-                    <span class="text-orange-600 font-bold mr-2">⚠</span>
-                    <p>Na devolução, <strong>carreta com lixo é cobrado a taxa de R$ 10,00.</strong></p>
+
+                <!-- COLUNA 2 -->
+                <div class="space-y-2">
+
+                    <div class="flex items-start">
+                        <span class="text-blue-600 font-bold mr-2">✓</span>
+                        <p>Precisa ficar muitos dias? <strong>É necessário combinar previamente.</strong></p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-orange-600 font-bold mr-2">⚠</span>
+                        <p>Na devolução, <strong>carreta com lixo terá taxa de R$ 10,00.</strong></p>
+                    </div>
+
+                    <!-- 🆕 NOVAS REGRAS ADICIONADAS -->
+                    <div class="flex items-start">
+                        <span class="text-purple-600 font-bold mr-2">*</span>
+                        <p>
+                            <strong>Nossas diárias funcionam assim:</strong><br>
+                            <strong>Seg a Sex:</strong> 24h (exceto sexta após 12h — devido ao horário de sábado:
+                            08h–12h).<br>
+                            <strong>Sábado:</strong> aluguel somente para devolução no mesmo dia até 12h ou para 2
+                            diárias.
+                        </p>
+                    </div>
+
+                    <div class="flex items-start">
+                        <span class="text-purple-600 font-bold mr-2">*</span>
+                        <p>
+                            <strong>Tempo de tolerância:</strong> 20 minutos (dentro do horário comercial).
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </div>
 
+
         <!-- Observações -->
-        @if($aluguel->observacoes)
-        <div class="p-2 mb-2 border border-gray-200 bg-gray-50 rounded-lg">
-            <h5 class="font-bold text-gray-800 mb-2">OBSERVAÇÕES</h5>
-            <p class="text-sm text-gray-700">{{ $aluguel->observacoes }}</p>
-        </div>
+        @if ($aluguel->observacoes)
+            <div class="p-2 mb-2 border border-gray-200 bg-gray-50 rounded-lg">
+                <h5 class="font-bold text-gray-800 mb-2">OBSERVAÇÕES</h5>
+                <p class="text-sm text-gray-700">{{ $aluguel->observacoes }}</p>
+            </div>
         @endif
 
         <!-- Declaração e Assinaturas -->
         <div class="p-2 mb-2 border border-gray-300 bg-white rounded-lg">
             <p class="text-[9px] text-gray-800 text-justify mb-2">
-                Declaro que recebi o veículo acima identificado em perfeitas condições de uso e funcionamento, 
-                comprometendo-me a devolvê-lo nas mesmas condições. Declaro ainda que li e concordo com todas as 
+                Declaro que recebi o veículo acima identificado em perfeitas condições de uso e funcionamento,
+                comprometendo-me a devolvê-lo nas mesmas condições. Declaro ainda que li e concordo com todas as
                 regras e condições estabelecidas neste recibo.
             </p>
-            
+
             <div class="grid grid-cols-2 gap-12 text-center">
                 <!-- Locatário -->
                 <div>
                     <div class="border-b-2 border-gray-400 h-16 w-3/4 mx-auto mb-2"></div>
                     <p class="font-bold text-gray-800">{{ $aluguel->cliente->nome }}</p>
-                    <p class="text-xs text-gray-600">Locatário ({{ $aluguel->cliente->cpf_cnpj }})</p>
+                    <p class="text-xs text-gray-600">
+                        Locatário ({{ \App\Helper\FormatHelper::formatCpfCnpj($aluguel->cliente->cpf_cnpj) }})
+                    </p>
+
                     <!--<p class="text-xs text-gray-500 mt-1">Data: _____/_____/_________</p>-->
                 </div>
 
@@ -235,7 +275,7 @@
         </footer>
 
     </div>
-    
+
     <script>
         window.print();
     </script>

@@ -34,16 +34,7 @@ use Leandrocfe\FilamentPtbrFormFields\Money;
 
 class AluguelForm
 {
-    public static function getCleanOptionString(Model $model): string
-    {
-        return new HtmlString(
-            view('filament.components.select-user-results')
-                ->with('name', $model?->identificacao)
-                ->with('email', $model?->valor_diaria)
-                ->with('image', $model?->foto)
-                ->render()
-        );
-    }
+   
     public static function configure(Schema $schema): Schema
     {
         return $schema
