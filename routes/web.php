@@ -17,4 +17,23 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
+Route::middleware(['auth'])->prefix('relatorios')->group(function () {
+    
+    // Página de filtros
+    Route::get('/alugueis/filtros', [AluguelController::class, 'filtrosAlugueis'])
+        ->name('relatorios.filtros-alugueis');
+    
+    // Gerar relatório (POST para evitar URL muito longa)
+    Route::post('/alugueis/gerar', [AluguelController::class, 'gerarRelatorioAlugueis'])
+        ->name('relatorios.gerar-alugueis');
+    
+    // Exportar PDF (opcional)
+    Route::post('/alugueis/exportar-pdf', [AluguelController::class, 'exportarPdfAlugueis'])
+        ->name('relatorios.exportar-pdf-alugueis');
+    
+    // Exportar Excel (opcional)
+    Route::post('/alugueis/exportar-excel', [AluguelController::class, 'exportarExcelAlugueis'])
+        ->name('relatorios.exportar-excel-alugueis');
+});
+
 Route::get('/laravel/login', fn() => redirect(route('filament.admin.auth.login')))->name('login');

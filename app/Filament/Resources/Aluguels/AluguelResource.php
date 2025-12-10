@@ -51,6 +51,7 @@ class AluguelResource extends Resource
             'create' => CreateAluguel::route('/create'),
             'edit' => EditAluguel::route('/{record}/edit'),
             'aluguel' => Pages\Aluguel::route('/{record}/recibo'),
+            'relatorio' => Pages\Relatorio::route('/relatorio'),
         ];
     }
     public static function getNavigationBadge(): ?string
