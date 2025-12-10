@@ -91,4 +91,6 @@ class Dashboard extends Page
         return Grid::make($this->getColumns())
             ->schema($this->getWidgetsSchemaComponents($this->getWidgets()));
     }
+    
+
 }
