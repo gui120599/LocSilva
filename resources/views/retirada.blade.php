@@ -141,6 +141,10 @@
                         R$ {{ number_format($aluguel->valor_total_aluguel ?? 0.0, 2, ',', '.') }}
                     </span>
                 </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-700">Valor pago pelo cliente:</span>
+                    <span class="font-semibold">R$ {{ number_format($aluguel->valor_pago_aluguel ?? 0.0, 2, ',', '.') }}</span>
+                </div>
             </div>
         </div>
 
