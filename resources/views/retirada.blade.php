@@ -200,7 +200,7 @@
 
                     <div class="flex items-start">
                         <span class="text-orange-600 font-bold mr-2">⚠</span>
-                        <p>Na devolução, <strong>carreta com lixo terá taxa de R$ 10,00.</strong></p>
+                        <p>Na devolução, <strong>carreta com lixo terá taxa de R$ 20,00.</strong></p>
                     </div>
 
                     <!-- 🆕 NOVAS REGRAS ADICIONADAS -->
