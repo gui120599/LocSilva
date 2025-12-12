@@ -67,7 +67,7 @@
                 </h5>
                 <div class="space-y-1 text-sm text-gray-700 text-[10px]">
                     <p><strong>Nome:</strong> {{ $aluguel->cliente->nome }}</p>
-                    <p><strong>CPF/CNPJ:</strong> {{ $aluguel->cliente->cpf_cnpj }}</p>
+                    <p><strong>CPF/CNPJ:</strong> {{ \App\Helper\FormatHelper::formatCpfCnpj($aluguel->cliente->cpf_cnpj) }}</p>
                     <p><strong>Telefone:</strong> {{ $aluguel->cliente->telefone }}</p>
                     <p><strong>Endereço:</strong> {{ $aluguel->cliente->endereco ?? 'Não informado' }}</p>
                 </div>
