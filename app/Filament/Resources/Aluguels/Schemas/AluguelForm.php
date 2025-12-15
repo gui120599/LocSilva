@@ -34,7 +34,7 @@ use Leandrocfe\FilamentPtbrFormFields\Money;
 
 class AluguelForm
 {
-   
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -271,7 +271,44 @@ class AluguelForm
                                             ImageEntry::make('carreta.foto')
                                                 ->label('Imagem')
                                                 ->disk('public'),
-                                        ])
+                                        ]),
+                                    Section::make()
+                                        ->columnSpanFull()
+                                        ->description('Adicionais')
+                                        ->schema([
+                                            Repeater::make('adicionaisAlugueis')
+                                                ->relationship()
+                                                ->collapsible()
+                                                ->deletable(true)
+                                                ->cloneable()
+                                                ->reorderable(false)
+                                                ->addActionLabel('Adicionar Adicional')
+                                                ->columns(3)
+                                                ->schema([
+                                                    Select::make('id')
+                                                        ->label('Adicional')
+                                                        ->required()
+                                                        ->relationship('adicional', 'descricao') // 👈 Também funciona assim
+                                                        ->searchable()
+                                                        ->preload(),
+
+                                                    TextInput::make('pivot.quantidade')
+                                                        ->label('Quantidade')
+                                                        ->numeric()
+                                                        ->default(1)
+                                                        ->required(),
+
+                                                    Money::make('pivot.valor')
+                                                        ->label('Valor')
+                                                        ->required(),
+
+                                                    Textarea::make('pivot.observacoes')
+                                                        ->columnSpanFull()
+                                                        ->label('Observações')
+                                                        ->rows(2),
+                                                ]),
+
+                                        ]),
                                 ]),
                         ]),
 
@@ -418,8 +455,8 @@ class AluguelForm
                                         ->itemLabel(
                                             fn(array $state): ?string =>
                                             isset($state['valor_total_movimento'])
-                                                ? 'Pagamento: R$ ' . number_format((float)$state['valor_total_movimento'], 2, ',', '.')
-                                                : 'Novo Pagamento'
+                                            ? 'Pagamento: R$ ' . number_format((float) $state['valor_total_movimento'], 2, ',', '.')
+                                            : 'Novo Pagamento'
                                         )
                                         ->defaultItems(0)
                                         ->columns(4)
@@ -487,7 +524,7 @@ class AluguelForm
 
                                                     // Valores atuais já existentes (normalizados)
                                                     $valorAcrescimoAtual = self::normalizeMoney($get('valor_acrescimo'));
-                                                    $valorDescontoAtual  = self::normalizeMoney($get('valor_desconto'));
+                                                    $valorDescontoAtual = self::normalizeMoney($get('valor_desconto'));
 
                                                     if ($metodo && $metodo->taxa_tipo !== 'N/A' && $metodo->taxa_percentual > 0) {
 
@@ -501,7 +538,7 @@ class AluguelForm
 
                                                             $set('valor_acrescimo', number_format($novoValorAcrescimo, 2, ',', '.'));
                                                             $set('valor_desconto', number_format($valorDescontoAtual, 2, ',', '.')); // mantém o existente
-
+                                        
                                                         } elseif ($metodo->taxa_tipo === 'DESCONTAR') {
 
                                                             // Somar taxa ao valor já existente
@@ -676,7 +713,8 @@ class AluguelForm
             }
 
             // Garante no mínimo 1 diária
-            if ($dias <= 0) $dias = 1;
+            if ($dias <= 0)
+                $dias = 1;
 
             // Atualiza campo quantidade_diarias
             $set('quantidade_diarias', $dias);
@@ -703,10 +741,10 @@ class AluguelForm
      */
     protected static function calcularValores(Set $set, Get $get): void
     {
-        $valorDiaria       = self::normalizeMoney($get('valor_diaria'));
+        $valorDiaria = self::normalizeMoney($get('valor_diaria'));
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
-        $valorAcrescimo    = self::normalizeMoney($get('valor_acrescimo_aluguel'));
-        $valorDesconto     = self::normalizeMoney($get('valor_desconto_aluguel'));
+        $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_aluguel'));
+        $valorDesconto = self::normalizeMoney($get('valor_desconto_aluguel'));
 
         // Calcular subtotal
         $subtotal = $valorDiaria * $quantidadeDiarias;
@@ -724,9 +762,9 @@ class AluguelForm
      */
     protected static function calcularTotalMovimento(Set $set, Get $get): void
     {
-        $valorPago      = self::normalizeMoney($get('valor_pago_movimento'));
+        $valorPago = self::normalizeMoney($get('valor_pago_movimento'));
         $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_movimento'));
-        $valorDesconto  = self::normalizeMoney($get('valor_desconto_movimento'));
+        $valorDesconto = self::normalizeMoney($get('valor_desconto_movimento'));
 
         $valorTotal = $valorPago + $valorAcrescimo - $valorDesconto;
 

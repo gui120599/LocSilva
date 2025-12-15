@@ -66,7 +66,7 @@ class Aluguel extends Model
         return $this->hasMany(MovimentoCaixa::class, 'aluguel_id');
     }
 
-    
+
 
     /**
      * Calcula o valor total do aluguel
@@ -132,14 +132,57 @@ class Aluguel extends Model
     public function cancelar(string $motivo = null): void
     {
         $observacoes = $this->observacoes ?? '';
-        
+
         if ($motivo) {
             $observacoes .= "\n\nCancelado em " . now()->format('d/m/Y H:i') . ": {$motivo}";
         }
-        
+
         $this->update([
             'status' => 'cancelado',
             'observacoes' => $observacoes,
         ]);
+    }
+
+    /**
+     * Um aluguel pode ter vários adicionais (através da pivot)
+     */
+    public function adicionais(): BelongsToMany
+    {
+        return $this->belongsToMany(Adicional::class, 'adicionais_alugueis')
+            ->withPivot('quantidade', 'valor', 'observacoes')
+            ->withTimestamps()
+            ->using(AdicionalAluguel::class);
+    }
+
+    /**
+     * Relacionamento direto com a tabela pivot
+     */
+    public function adicionaisAlugueis(): HasMany
+    {
+        return $this->hasMany(AdicionalAluguel::class);
+    }
+
+    /**
+     * Calcula o total dos adicionais
+     */
+    public function getTotalAdicionaisAttribute(): float
+    {
+        return $this->adicionaisAlugueis->sum(function ($item) {
+            return $item->quantidade * $item->valor;
+        });
+    }
+
+    /**
+     * Calcula o valor total do aluguel INCLUINDO adicionais
+     */
+    public function calcularValorTotalComAdicionais(): float
+    {
+        $subtotal = $this->valor_diaria * $this->quantidade_diarias;
+        $totalAdicionais = $this->total_adicionais;
+
+        return $subtotal
+            + ($this->valor_acrescimo_aluguel ?? 0)
+            - ($this->valor_desconto_aluguel ?? 0)
+            + $totalAdicionais;
     }
 }

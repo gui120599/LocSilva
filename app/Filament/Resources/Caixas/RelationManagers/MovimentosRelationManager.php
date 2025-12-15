@@ -4,29 +4,23 @@ namespace App\Filament\Resources\Caixas\RelationManagers;
 
 use App\Models\MetodoPagamento;
 use Filament\Actions\AssociateAction;
-use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\DissociateAction;
 use Filament\Actions\DissociateBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
-use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Support\RawJs;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -126,7 +120,7 @@ class MovimentosRelationManager extends RelationManager
 
                                 // Valores atuais já existentes (normalizados)
                                 $valorAcrescimoAtual = self::normalizeMoney($get('valor_acrescimo'));
-                                $valorDescontoAtual  = self::normalizeMoney($get('valor_desconto'));
+                                $valorDescontoAtual = self::normalizeMoney($get('valor_desconto'));
 
                                 if ($metodo && $metodo->taxa_tipo !== 'N/A' && $metodo->taxa_percentual > 0) {
 
@@ -140,7 +134,7 @@ class MovimentosRelationManager extends RelationManager
 
                                         $set('valor_acrescimo', number_format($novoValorAcrescimo, 2, ',', '.'));
                                         $set('valor_desconto', number_format($valorDescontoAtual, 2, ',', '.')); // mantém o existente
-
+                    
                                     } elseif ($metodo->taxa_tipo === 'DESCONTAR') {
 
                                         // Somar taxa ao valor já existente
@@ -306,7 +300,7 @@ class MovimentosRelationManager extends RelationManager
                     ->visible(fn($record) => $record->descricao !== 'Saldo Inicial'),
                 DeleteAction::make()
                     ->visible(fn($record) =>
-                    $record->aluguel_id === null
+                        $record->aluguel_id === null
                         && $record->descricao !== 'Saldo Inicial'),
                 ForceDeleteAction::make(),
                 RestoreAction::make(),
@@ -344,9 +338,9 @@ class MovimentosRelationManager extends RelationManager
      */
     protected static function calcularTotalMovimento(Set $set, Get $get): void
     {
-        $valorPago      = self::normalizeMoney($get('valor_pago_movimento'));
+        $valorPago = self::normalizeMoney($get('valor_pago_movimento'));
         $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_movimento'));
-        $valorDesconto  = self::normalizeMoney($get('valor_desconto_movimento'));
+        $valorDesconto = self::normalizeMoney($get('valor_desconto_movimento'));
 
         $valorTotal = $valorPago + $valorAcrescimo - $valorDesconto;
 
