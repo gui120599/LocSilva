@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('adicionais', function(Blueprint $table){
             $table->id();
-            $table->string('descricao');
-            $table->string('foto')->nullable();
-            $table->decimal('valor',10,2)->default(0);
-            $table->text('observacoes')->nullable();
+            $table->string('descricao_adicional');
+            $table->string('foto_adicional')->nullable();
+            $table->decimal('valor_adicional',10,2)->default(0);
+            $table->text('observacoes_adicional')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

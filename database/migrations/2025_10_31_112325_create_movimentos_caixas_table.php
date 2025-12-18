@@ -37,6 +37,14 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('movimento_caixas');
+        Schema::table('movimentos_caixas', function (Blueprint $table) {
+            $table->dropForeign(['caixa_id']);
+            $table->dropForeign(['aluguel_id']);
+            $table->dropForeign(['user_id']);
+            $table->dropForeign(['metodo_pagamento_id']);
+            $table->dropForeign(['cartao_pagamento_id']);
+        });
+
+        Schema::dropIfExists('movimentos_caixas');
     }
 };

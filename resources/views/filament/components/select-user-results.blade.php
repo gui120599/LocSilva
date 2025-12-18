@@ -12,7 +12,7 @@
     @endif
     
     <div class="flex-1">
-        <div class="font-semibold text-gray-900">{{ $name }}</div>
+        <div class="font-semibold text-gray-900 dark:text-white">{{ $name }}</div>
         <div class="text-sm text-green-600">
             R$ {{ number_format($email, 2, ',', '.') }}/dia
         </div>

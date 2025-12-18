@@ -13,10 +13,10 @@ class Adicional extends Model
     protected $table = 'adicionais';
 
     protected $fillable = [
-        'descricao',
-        'foto',
-        'valor',
-        'observacoes',
+        'descricao_adicional',
+        'foto_adicional',
+        'valor_adicional',
+        'observacoes_adicional',
     ];
 
     protected $casts = [
@@ -26,13 +26,10 @@ class Adicional extends Model
     /**
      * Um adicional pode estar em vários aluguéis (através da pivot)
      */
-    public function alugueis(): BelongsToMany
+    /*public function adicionalAluguel(): BelongsToMany
     {
-        return $this->belongsToMany(Aluguel::class, 'adicionais_alugueis')
-            ->withPivot('quantidade', 'valor', 'observacoes')
-            ->withTimestamps()
-            ->using(AdicionalAluguel::class);
-    }
+        return $this->belongsToMany(Ad::class, 'adicionais_alugueis');
+    }*/
 
     /**
      * Relacionamento direto com a tabela pivot
@@ -61,12 +58,12 @@ class Adicional extends Model
     /**
      * Obtém URL da foto
      */
-    public function getFotoUrlAttribute(): ?string
+    /*public function getFotoUrlAttribute(): ?string
     {
         if (!$this->foto) {
             return null;
         }
 
-        return \Storage::disk('public')->url($this->foto);
-    }
+        return Storage::disk('public')->url($this->foto);
+    }*/
 }

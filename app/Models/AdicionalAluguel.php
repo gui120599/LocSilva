@@ -14,14 +14,16 @@ class AdicionalAluguel extends Pivot
     protected $fillable = [
         'adicional_id',
         'aluguel_id',
-        'quantidade',
-        'valor',
-        'observacoes',
+        'quantidade_adicional_aluguel',
+        'valor_unitario_adicional_aluguel',
+        'valor_total_adicional_aluguel',
+        'observacoes_adicional_aluguel',
     ];
 
     protected $casts = [
-        'quantidade' => 'double',
-        'valor' => 'decimal:2',
+        'quantidade_adicional_aluguel' => 'double',
+        'valor_unitario_adicional_aluguel' => 'decimal:2',
+        'valor_total_adicional_aluguel' => 'decimal:2',
     ];
 
     /**

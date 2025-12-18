@@ -21,20 +21,20 @@ class AdicionalForm
                     ->columnSpanFull()
                     ->columns(4)
                     ->schema([
-                        FileUpload::make('foto')
+                        FileUpload::make('foto_adicional')
                             ->disk('public')
                             ->directory('fotos_adicionais')
                             ->image()
                             ->maxSize(2048)
                             ->hint('Tamanho máximo: 2MB')
                             ->columnSpanFull(),
-                        TextInput::make('descricao')
+                        TextInput::make('descricao_adicional')
                             ->columnSpan(3)
                             ->required(),
-                        Money::make('valor')
+                        Money::make('valor_adicional')
                             ->columnSpan(1)
                             ->required(),
-                        Textarea::make('observacoes')
+                        Textarea::make('observacoes_adicional')
                             ->columnSpanFull(),
                     ]),
 

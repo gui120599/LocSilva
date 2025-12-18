@@ -143,16 +143,6 @@ class Aluguel extends Model
         ]);
     }
 
-    /**
-     * Um aluguel pode ter vários adicionais (através da pivot)
-     */
-    public function adicionais(): BelongsToMany
-    {
-        return $this->belongsToMany(Adicional::class, 'adicionais_alugueis')
-            ->withPivot('quantidade', 'valor', 'observacoes')
-            ->withTimestamps()
-            ->using(AdicionalAluguel::class);
-    }
 
     /**
      * Relacionamento direto com a tabela pivot

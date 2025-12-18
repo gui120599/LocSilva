@@ -19,12 +19,12 @@ class AdicionalsTable
     {
         return $table
             ->columns([
-                ImageColumn::make('foto')
+                ImageColumn::make('foto_adicional')
                     ->label('Imagem')
                     ->disk('public'),
-                TextColumn::make('descricao')
+                TextColumn::make('descricao_adicional')
                     ->searchable(),
-                TextColumn::make('valor')
+                TextColumn::make('valor_adicional')
                     ->money('BRL')
                     ->sortable(),
                 TextColumn::make('created_at')
