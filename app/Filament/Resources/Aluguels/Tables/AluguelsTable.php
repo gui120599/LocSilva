@@ -61,8 +61,7 @@ class AluguelsTable
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
 
                 IconColumn::make('status')
                     ->tooltip(fn(string $state): string => match ($state) {
@@ -192,6 +191,7 @@ class AluguelsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
 
                 SelectFilter::make('status')
