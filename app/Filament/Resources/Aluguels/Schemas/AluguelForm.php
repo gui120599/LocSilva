@@ -44,139 +44,6 @@ class AluguelForm
             ->components([
                 Wizard::make([
 
-                    Step::make('Adiconais')
-                        ->description('Se necessário selecione adicionais para o aluguel')
-                        ->icon('heroicon-o-squares-plus')
-                        //->afterStateUpdated(fn(Get $get, Set $set, $state) => self::calcularValorTotalAdicionaisFromArray($set,$get('adicionaisAlugueis')))
-                        ->schema([
-                            Repeater::make('adicionaisAlugueis')
-                                ->relationship()
-                                ->collapsible()
-                                ->deletable(true)
-                                ->cloneable()
-                                ->reorderable(false)
-                                ->addActionLabel('Adicionar Adicional')
-                                ->columns(6)
-                                ->live()
-                                ->reactive() // Adicione isso
-                                ->itemLabel(function (array $state): ?string {
-                                    if (!isset($state['id_adicional'])) {
-                                        return 'Novo adicional';
-                                    }
-
-                                    $adicional = Adicional::find($state['id_adicional']);
-
-                                    return $adicional
-                                        ? $adicional->descricao_adicional
-                                        : 'Adicional';
-                                })
-                                ->schema([
-                                    Select::make('id_adicional')
-                                        ->columnSpan(3)
-                                        ->label('Adicional')
-                                        ->allowHtml()
-                                        ->searchable()
-                                        ->live()
-                                        ->reactive()
-                                        ->getSearchResultsUsing(function (string $search) {
-                                            return Adicional::where('descricao_adicional', 'like', "%{$search}%")
-                                                ->limit(10)
-                                                ->get()
-                                                ->mapWithKeys(fn($adicional) => [
-                                                    $adicional->id => static::getCleanOptionString($adicional),
-                                                ])
-                                                ->toArray();
-                                        })
-                                        ->getOptionLabelUsing(function ($value) {
-                                            $adicional = Adicional::find($value);
-
-                                            return $adicional
-                                                ? static::getCleanOptionString($adicional)
-                                                : null;
-                                        })
-                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                            if (!$state) {
-                                                return;
-                                            }
-
-                                            $adicional = Adicional::find($state);
-
-                                            if ($adicional) {
-                                                $set('valor_unitario_adicional_aluguel', number_format($adicional->valor_adicional, 2, ',', '.'));
-                                                $set('observacoes_adicional_aluguel', $adicional->observacoes_adicional);
-                                                $qtd = (int) ($get('quantidade_adicional_aluguel') ?? 1);
-
-                                                $resultado = $qtd * $adicional->valor_adicional;
-                                                $set('valor_total_adicional_aluguel', number_format($resultado, 2, ',', '.'));
-
-                                                // Recalcula o total geral de adicionais
-                                                $adicionais = $get('../../adicionaisAlugueis');
-                                                self::calcularValorTotalAdicionaisFromArray($set, $adicionais);
-                                            }
-                                        }),
-
-                                    TextInput::make('quantidade_adicional_aluguel')
-                                        ->label('Qtd.')
-                                        ->default(1)
-                                        ->minValue(1)
-                                        ->live()
-                                        ->reactive()
-                                        ->prefixActions([
-                                            Action::make('increment')
-                                                ->icon('heroicon-m-plus')
-                                                ->action(function (Get $get, Set $set, $state) {
-                                                    $novaQtd = ($state ?? 1) + 1;
-                                                    $set('quantidade_adicional_aluguel', $novaQtd);
-
-                                                    // CORRETO: Passe $get e $set (objetos), não $get() e $set()
-                                                    self::recalcularValorAdicional($get, $set);
-                                                }),
-                                        ])
-                                        ->suffixActions([
-                                            Action::make('decrement')
-                                                ->icon('heroicon-m-minus')
-                                                ->action(function (Get $get, Set $set, $state) { // Adicione $state aqui
-                                                    $novaQtd = max(1, ($state ?? 1) - 1);
-                                                    $set('quantidade_adicional_aluguel', $novaQtd);
-
-                                                    // CORRETO: Passe $get e $set (objetos), não $get() e $set()
-                                                    self::recalcularValorAdicional($get, $set);
-                                                }),
-                                        ])
-                                        ->afterStateUpdated(fn(Get $get, Set $set) => self::recalcularValorAdicional($get, $set))
-                                        ->extraInputAttributes([
-                                            'class' => 'text-center',
-                                        ]),
-
-                                    Money::make('valor_unitario_adicional_aluguel')
-                                        ->label('Valor Unitário')
-                                        ->columnSpan(1)
-                                        ->disabled()
-                                        ->dehydrated()
-                                        ->required(),
-
-                                    Money::make('valor_total_adicional_aluguel')
-                                        ->label('Valor Total')
-                                        ->columnSpan(1)
-                                        ->disabled()
-                                        ->dehydrated()
-                                        ->required(),
-
-                                    Textarea::make('observacoes_adicional_aluguel')
-                                        ->label('Observações')
-                                        ->columnSpanFull()
-                                        ->rows(2),
-                                ]),
-
-                            // Valor dos Adicionais (total geral)
-                            Money::make('valor_adicionais_aluguel')
-                                ->label('Valor dos Adicionais')
-                                ->required()
-                                ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
-                                ->helperText('Valor por dia de aluguel'),
-
-                        ]),
-
                     Step::make('Cliente')
                         ->description('Selecione um cliente já cadastrado ou registre um novo')
                         ->icon('heroicon-o-users')
@@ -416,7 +283,144 @@ class AluguelForm
                                 ]),
                         ]),
 
+                    Step::make('Adicionais')
+                        ->description('Se necessário selecione adicionais para o aluguel')
+                        ->icon('heroicon-o-squares-plus')
+                        ->afterValidation(fn($set, $get) => self::calcularValores($set, $get))
+                        ->schema([
+                            Repeater::make('adicionaisAlugueis')
+                                ->relationship()
+                                ->collapsible()
+                                ->deletable(true)
+                                ->cloneable()
+                                ->reorderable(false)
+                                ->addActionLabel('Adicionar Adicional')
+                                ->columns(6)
+                                ->live()
+                                ->reactive()
+                                ->itemLabel(function (array $state): ?string {
+                                    if (!isset($state['adicional_id'])) {
+                                        return 'Novo adicional';
+                                    }
 
+                                    $adicional = Adicional::find($state['adicional_id']);
+
+                                    return $adicional
+                                        ? $adicional->descricao_adicional
+                                        : 'Adicional';
+                                })
+                                ->afterStateUpdated(
+                                    function (Get $get, Set $set) {
+                                        // Recalcula o total geral de adicionais
+                                        $adicionais = $get('adicionaisAlugueis');
+                                        self::calcularValorTotalAdicionaisFromArray($set, $adicionais, false);
+                                    }
+                                )
+                                ->schema([
+                                    Select::make('adicional_id')
+                                        ->columnSpan(3)
+                                        ->label('Adicional')
+                                        ->allowHtml()
+                                        ->searchable()
+                                        ->live()
+                                        ->reactive()
+                                        ->getSearchResultsUsing(function (string $search) {
+                                            return Adicional::where('descricao_adicional', 'like', "%{$search}%")
+                                                ->limit(10)
+                                                ->get()
+                                                ->mapWithKeys(fn($adicional) => [
+                                                    $adicional->id => static::getCleanOptionString($adicional),
+                                                ])
+                                                ->toArray();
+                                        })
+                                        ->options(function () {
+                                            return Adicional::limit(10)
+                                                ->get()
+                                                ->mapWithKeys(fn($adicional) => [
+                                                    $adicional->id => static::getCleanOptionString($adicional),
+                                                ])
+                                                ->toArray();
+                                        })
+                                        ->getOptionLabelUsing(function ($value) {
+                                            $adicional = Adicional::find($value);
+
+                                            return $adicional
+                                                ? static::getCleanOptionString($adicional)
+                                                : null;
+                                        })
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                            if (!$state) {
+                                                return;
+                                            }
+
+                                            $adicional = Adicional::find($state);
+
+                                            if ($adicional) {
+                                                $set('valor_unitario_adicional_aluguel', number_format($adicional->valor_adicional, 2, ',', '.'));
+                                                $set('observacoes_adicional_aluguel', $adicional->observacoes_adicional);
+                                                $qtd = (int) ($get('quantidade_adicional_aluguel') ?? 1);
+
+                                                $resultado = $qtd * $adicional->valor_adicional;
+                                                $set('valor_total_adicional_aluguel', number_format($resultado, 2, ',', '.'));
+
+                                                // Recalcula o total geral de adicionais
+                                                $adicionais = $get('../../adicionaisAlugueis');
+                                                self::calcularValorTotalAdicionaisFromArray($set, $adicionais);
+                                            }
+                                        }),
+
+                                    TextInput::make('quantidade_adicional_aluguel')
+                                        ->label('Qtd.')
+                                        ->default(1)
+                                        ->minValue(1)
+                                        ->live()
+                                        ->reactive()
+                                        ->prefixActions([
+                                            Action::make('increment')
+                                                ->icon('heroicon-m-plus')
+                                                ->action(function (Get $get, Set $set, $state) {
+                                                    $novaQtd = ($state ?? 1) + 1;
+                                                    $set('quantidade_adicional_aluguel', $novaQtd);
+
+                                                    // CORRETO: Passe $get e $set (objetos), não $get() e $set()
+                                                    self::recalcularValorAdicional($get, $set);
+                                                }),
+                                        ])
+                                        ->suffixActions([
+                                            Action::make('decrement')
+                                                ->icon('heroicon-m-minus')
+                                                ->action(function (Get $get, Set $set, $state) { // Adicione $state aqui
+                                                    $novaQtd = max(1, ($state ?? 1) - 1);
+                                                    $set('quantidade_adicional_aluguel', $novaQtd);
+
+                                                    // CORRETO: Passe $get e $set (objetos), não $get() e $set()
+                                                    self::recalcularValorAdicional($get, $set);
+                                                }),
+                                        ])
+                                        ->afterStateUpdated(fn(Get $get, Set $set) => self::recalcularValorAdicional($get, $set))
+                                        ->extraInputAttributes([
+                                            'class' => 'text-center',
+                                        ]),
+
+                                    Money::make('valor_unitario_adicional_aluguel')
+                                        ->label('Valor Unitário')
+                                        ->columnSpan(1)
+                                        ->readOnly()
+                                        ->required(),
+
+                                    Money::make('valor_total_adicional_aluguel')
+                                        ->label('Valor Total')
+                                        ->columnSpan(1)
+                                        ->readOnly()
+                                        ->required(),
+
+                                    Textarea::make('observacoes_adicional_aluguel')
+                                        ->label('Observações')
+                                        ->columnSpanFull()
+                                        ->rows(2),
+                                ]),
+
+                        ]),
 
                     Step::make('Datas')
                         ->description('Selecione as datas de retirada e devolução prevista')
@@ -491,8 +495,7 @@ class AluguelForm
                                     TextInput::make('quantidade_diarias')
                                         ->label('Quantidade de Diárias')
                                         ->numeric()
-                                        ->disabled()
-                                        ->dehydrated()
+                                        ->readOnly()
                                         ->suffix('dia(s)')
                                         ->default(1)
                                         ->helperText('Calculado automaticamente pelas datas'),
@@ -500,29 +503,43 @@ class AluguelForm
                                     // Valor da Diária (editável)
                                     Money::make('valor_diaria')
                                         ->label('Valor da Diária')
+                                        ->readOnly()
                                         ->required()
                                         ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                         ->helperText('Valor por dia de aluguel'),
 
+                                    // Valor da Diária adicionais
+                                    Money::make('valor_diaria_adicionais')
+                                        ->label('Diária dos Adicionais')
+                                        ->readOnly()
+                                        ->required()
+                                        ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
+                                        ->helperText('Valor por dia de aluguel'),
 
+                                    // Valor dos Adicionais (total geral)
+                                    Money::make('valor_adicionais_aluguel')
+                                        ->label('Total dos Adicionais')
+                                        ->required()
+                                        ->readOnly()
+                                        ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
+                                        ->helperText('Total dos Adicionais'),
 
                                     // Acréscimos
                                     Money::make('valor_acrescimo_aluguel')
-                                        ->label('Acréscimos')
+                                        ->label('(+)Acréscimos')
                                         ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                         ->helperText('Taxas, multas, etc.'),
 
                                     // Descontos
                                     Money::make('valor_desconto_aluguel')
-                                        ->label('Descontos')
+                                        ->label('(-)Descontos')
                                         ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                         ->helperText('Promoções, cortesias, etc.'),
 
                                     // Valor Total (readonly)
                                     Money::make('valor_total_aluguel')
                                         ->label('Valor Total')
-                                        ->disabled()
-                                        ->dehydrated()
+                                        ->readOnly()
                                         ->extraAttributes(['class' => 'font-bold text-lg'])
                                         ->helperText('Total do aluguel'),
 
@@ -532,15 +549,13 @@ class AluguelForm
                                             // Total Pago (calculado pelos movimentos)
                                             Money::make('valor_pago_aluguel')
                                                 ->label('Total Pago')
-                                                ->disabled()
-                                                ->dehydrated()
+                                                ->readOnly()
                                                 ->extraAttributes(['class' => 'text-green-600 font-semibold']),
 
                                             // Saldo Restante (calculado)
                                             Money::make('valor_saldo_aluguel')
                                                 ->label('Saldo Restante')
-                                                ->disabled()
-                                                ->dehydrated()
+                                                ->readOnly()
                                                 ->extraAttributes(['class' => 'text-red-600 font-bold text-lg']),
                                         ])
                                         ->columnSpanFull(),
@@ -808,7 +823,7 @@ class AluguelForm
     /**
      * Calcula valor total de Adicionais
      */
-    protected static function calcularValorTotalAdicionaisFromArray(Set $set, ?array $adicionais): void
+    protected static function calcularValorTotalAdicionaisFromArray(Set $set, ?array $adicionais, bool $dentroDoRepeater = true): void
     {
         $totalAdicionais = 0;
 
@@ -820,10 +835,27 @@ class AluguelForm
             }
         }
 
-        // Use '../..' para subir dois níveis e acessar o campo fora do repeater
-        $set('../../valor_adicionais_aluguel', number_format($totalAdicionais, 2, ',', '.'));
+        // Ajusta o caminho baseado no contexto
+        $campoPath = $dentroDoRepeater ? '../../valor_diaria_adicionais' : 'valor_diaria_adicionais';
+        $set($campoPath, number_format($totalAdicionais, 2, ',', '.'));
     }
 
+    /**
+     * Calcula valor total de Adicionais (retorna float)
+     */
+    protected static function ValorTotalAdicionais(?array $adicionais): float
+    {
+        $totalAdicionais = 0;
+
+        if (is_array($adicionais) && !empty($adicionais)) {
+            foreach ($adicionais as $adicional) {
+                if (isset($adicional['valor_total_adicional_aluguel'])) {
+                    $totalAdicionais += self::normalizeMoney($adicional['valor_total_adicional_aluguel']);
+                }
+            }
+        }
+        return $totalAdicionais;
+    }
 
     /**
      * Calulura totais
@@ -888,6 +920,8 @@ class AluguelForm
             $set,
             $get
         );
+
+        self::calcularValores($set, $get);
     }
 
     /**
@@ -896,18 +930,22 @@ class AluguelForm
     protected static function calcularValores(Set $set, Get $get): void
     {
         $valorDiaria = self::normalizeMoney($get('valor_diaria'));
-        $valorAdcionais = self::normalizeMoney($get('valor_adicionais_aluguel'));
+        $valorAdcionais = self::normalizeMoney(self::ValorTotalAdicionais($get('adicionaisAlugueis')));
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
         $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_aluguel'));
         $valorDesconto = self::normalizeMoney($get('valor_desconto_aluguel'));
+
+        //Calcular totaisAdicionais
+        $subtotalAdicionais = $valorAdcionais * $quantidadeDiarias;
 
         // Calcular subtotal
         $subtotal = $valorDiaria * $quantidadeDiarias;
 
         // Calcular total
-        $valorTotal = $subtotal + $valorAdcionais + $valorAcrescimo - $valorDesconto;
+        $valorTotal = $subtotal + $subtotalAdicionais + $valorAcrescimo - $valorDesconto;
 
         $set('valor_total_aluguel', number_format($valorTotal, 2, ',', '.'));
+        $set('valor_adicionais_aluguel', number_format($subtotalAdicionais, 2, ',', '.'));
 
         self::atualizarTotaisPagamento($get('movimentos'), $set, $get);
     }

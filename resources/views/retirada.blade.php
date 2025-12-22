@@ -27,7 +27,7 @@
                 <h5 class="text-lg font-extrabold text-gray-800">
                     RECIBO DE RETIRADA
                 </h5>
-                <p class="text-sm text-gray-600">
+                <p class="text-xs text-gray-600">
                     Contrato <span class="font-bold text-primary-600">#{{ $aluguel->id }}</span>
                 </p>
                 <p class="text-xs text-gray-500">
@@ -42,7 +42,7 @@
 
         <!-- Informações da Empresa -->
         <div class="p-2 mb-2 bg-gray-50 border border-gray-200 rounded-lg">
-            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
+            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-xs">
                 <x-heroicon-s-building-office class="w-5 h-5 mr-2 text-primary-600" /> LOCADOR
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-gray-700">
@@ -62,12 +62,13 @@
 
             <!-- Cliente -->
             <div class="p-2 border border-gray-200 bg-white rounded-lg">
-                <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
+                <h5 class="font-bold text-gray-800 mb-2 flex items-center text-xs">
                     <x-heroicon-s-user class="w-5 h-5 mr-2 text-primary-600" /> LOCATÁRIO
                 </h5>
-                <div class="space-y-1 text-sm text-gray-700 text-[10px]">
+                <div class="space-y-1 text-xs text-gray-700 text-[10px]">
                     <p><strong>Nome:</strong> {{ $aluguel->cliente->nome }}</p>
-                    <p><strong>CPF/CNPJ:</strong> {{ \App\Helper\FormatHelper::formatCpfCnpj($aluguel->cliente->cpf_cnpj) }}</p>
+                    <p><strong>CPF/CNPJ:</strong>
+                        {{ \App\Helper\FormatHelper::formatCpfCnpj($aluguel->cliente->cpf_cnpj) }}</p>
                     <p><strong>Telefone:</strong> {{ $aluguel->cliente->telefone }}</p>
                     <p><strong>Endereço:</strong> {{ $aluguel->cliente->endereco ?? 'Não informado' }}</p>
                 </div>
@@ -75,10 +76,10 @@
 
             <!-- Veículo -->
             <div class="p-2 border border-gray-200 bg-white rounded-lg">
-                <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
+                <h5 class="font-bold text-gray-800 mb-2 flex items-center text-xs">
                     <x-heroicon-s-truck class="w-5 h-5 mr-2 text-primary-600" /> VEÍCULO LOCADO
                 </h5>
-                <div class="space-y-1 text-sm text-gray-700 text-[10px]">
+                <div class="space-y-1 text-xs text-gray-700 text-[10px]">
                     <p><strong>Identificação:</strong> {{ $aluguel->carreta->identificacao }}</p>
                     <p><strong>Placa:</strong>
                         <span class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
@@ -97,7 +98,7 @@
 
         <!-- Informações do Aluguel -->
         <div class="p-2 mb-2 border-1 border-gray-200 bg-primary-50/30 rounded-lg">
-            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
+            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-xs">
                 <x-heroicon-s-calendar class="w-5 h-5 mr-2 text-primary-600" /> PERÍODO DO ALUGUEL
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[9px]">
@@ -122,35 +123,103 @@
 
         <!-- Valores -->
         <div class="p-2 mb-2 border border-gray-200 bg-white rounded-lg">
-            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-sm">
+            <h5 class="font-bold text-gray-800 mb-2 flex items-center text-xs">
                 <x-heroicon-s-currency-dollar class="w-5 h-5 mr-2 text-green-600" /> VALORES
             </h5>
-            <div class="space-y-2 text-sm">
+            <div class="space-y-1 text-xs">
                 <div class="flex justify-between">
-                    <span class="text-gray-700">Valor da Diária:</span>
-                    <span class="font-semibold">R$
+                    <span class="text-gray-700 text-[10px]">Valor da Diária:</span>
+                    <span class="font-semibold text-[10px]">R$
                         {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-gray-700">Quantidade de Diárias:</span>
-                    <span class="font-semibold">{{ $aluguel->quantidade_diarias }}</span>
+                    <span class="text-gray-700 text-[10px]">Quantidade de Diárias:</span>
+                    <span class="font-semibold text-[10px]">{{ $aluguel->quantidade_diarias }}</span>
                 </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-700 text-[10px]">Subtotal Diárias:</span>
+                    <span class="font-semibold text-[10px]">R$
+                        {{ number_format($aluguel->carreta->valor_diaria * $aluguel->quantidade_diarias, 2, ',', '.') }}</span>
+                </div>
+
+                <!-- Adicionais -->
+                @if ($aluguel->adicionaisAlugueis->isNotEmpty())
+                    <div class="pt-2 border-t border-gray-200">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-semibold text-[10px] text-gray-800">Adicionais:</span>
+                        </div>
+                        <div class="pl-3 space-y-1">
+                            @foreach ($aluguel->adicionaisAlugueis as $adicionalAluguel)
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-600 text-[10px]">
+                                        {{ $adicionalAluguel->adicional->descricao_adicional ?? 'Adicional' }}
+                                        ({{ number_format($adicionalAluguel->quantidade_adicional_aluguel, 0) }}x)
+                                    </span>
+                                    <span class="text-gray-700 text-[10px]">
+                                        R$
+                                        {{ number_format($adicionalAluguel->valor_total_adicional_aluguel, 2, ',', '.') }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-between mt-1 font-semibold">
+                            <span class="text-gray-700 text-[10px]">Total Adicionais:</span>
+                            <span class="text-gray-800 text-[10px]">
+                                R$
+                                {{ number_format($aluguel->adicionaisAlugueis->sum('valor_total_adicional_aluguel') ?? 0, 2, ',', '.') }}
+                            </span>
+
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Acréscimos e Descontos -->
+                @if ($aluguel->valor_acrescimo_aluguel > 0 || $aluguel->valor_desconto_aluguel > 0)
+                    <div class="pt-2 border-t border-gray-200 space-y-1">
+                        @if ($aluguel->valor_acrescimo_aluguel > 0)
+                            <div class="flex justify-between">
+                                <span class="text-gray-700 text-[10px]">Acréscimos:</span>
+                                <span class="font-semibold text-[10px] text-orange-600">+ R$
+                                    {{ number_format($aluguel->valor_acrescimo_aluguel, 2, ',', '.') }}</span>
+                            </div>
+                        @endif
+                        @if ($aluguel->valor_desconto_aluguel > 0)
+                            <div class="flex justify-between">
+                                <span class="text-gray-700 text-[10px]">Descontos:</span>
+                                <span class="font-semibold text-[10px] text-blue-600">- R$
+                                    {{ number_format($aluguel->valor_desconto_aluguel, 2, ',', '.') }}</span>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- Total Final -->
                 <div class="flex justify-between pt-2 border-t border-gray-200">
-                    <span class="font-bold text-gray-800">VALOR TOTAL PREVISTO:</span>
-                    <span class="font-bold text-green-600 text-lg">
+                    <span class="font-bold text-[10px] text-gray-800">VALOR TOTAL:</span>
+                    <span class="font-bold text-[10px] text-green-600 text-lg">
                         R$ {{ number_format($aluguel->valor_total_aluguel ?? 0.0, 2, ',', '.') }}
                     </span>
                 </div>
+
                 <div class="flex justify-between">
-                    <span class="text-gray-700">Valor pago pelo cliente:</span>
-                    <span class="font-semibold">R$ {{ number_format($aluguel->valor_pago_aluguel ?? 0.0, 2, ',', '.') }}</span>
+                    <span class="text-gray-700 text-[10px]">Valor Pago:</span>
+                    <span class="font-semibold text-[10px] text-green-600">R$
+                        {{ number_format($aluguel->valor_pago_aluguel ?? 0.0, 2, ',', '.') }}</span>
                 </div>
+
+                @if (($aluguel->valor_saldo_aluguel ?? 0) > 0)
+                    <div class="flex justify-between pt-1">
+                        <span class="text-gray-700 text-[10px]">Saldo Restante:</span>
+                        <span class="font-semibold text-[10px] text-red-600">R$
+                            {{ number_format($aluguel->valor_saldo_aluguel ?? 0.0, 2, ',', '.') }}</span>
+                    </div>
+                @endif
             </div>
         </div>
 
         <!-- REGRAS E CONDIÇÕES - DESTAQUE -->
         <div class="p-2 mb-2 border-2 border-red-400 bg-red-50 rounded-lg">
-            <h5 class="font-extrabold text-red-800 mb-2 text-center text-sm flex items-center justify-center">
+            <h5 class="font-extrabold text-red-800 mb-2 text-center text-xs flex items-center justify-center">
                 <x-heroicon-s-exclamation-triangle class="w-6 h-6 mr-2" />
                 REGRAS E CONDIÇÕES IMPORTANTES
             </h5>
@@ -160,6 +229,11 @@
 
                 <!-- COLUNA 1 -->
                 <div class="space-y-2">
+
+                    <div class="flex items-start">
+                        <span class="text-red-600 font-bold mr-2">•</span>
+                        <p><strong>Horário de funcionamento: SEG-SEX 08h–12h, 13h-18h e SÁB 08h–12h</strong></p>
+                    </div>
 
                     <div class="flex items-start">
                         <span class="text-red-600 font-bold mr-2">•</span>
@@ -187,7 +261,7 @@
                         <p><strong>NÃO</strong> é aplicado nenhum desconto caso a devolução seja antes das 24 horas.</p>
                     </div>
 
-                     <div class="flex items-start">
+                    <div class="flex items-start">
                         <span class="text-blue-600 font-bold mr-2">✓</span>
                         <p>Desconto <strong>somente a partir de 3 diárias.</strong></p>
                     </div>
@@ -235,7 +309,7 @@
         @if ($aluguel->observacoes)
             <div class="p-2 mb-2 border border-gray-200 bg-gray-50 rounded-lg">
                 <h5 class="font-bold text-gray-800 mb-2">OBSERVAÇÕES</h5>
-                <p class="text-sm text-gray-700">{{ $aluguel->observacoes }}</p>
+                <p class="text-xs text-gray-700">{{ $aluguel->observacoes }}</p>
             </div>
         @endif
 
@@ -250,7 +324,7 @@
             <div class="grid grid-cols-2 gap-12 text-center">
                 <!-- Locatário -->
                 <div>
-                    <div class="border-b-2 border-gray-400 h-16 w-3/4 mx-auto mb-2"></div>
+                    <div class="border-b-2 border-gray-400 h-6 w-3/4 mx-auto mb-2"></div>
                     <p class="font-bold text-gray-800">{{ $aluguel->cliente->nome }}</p>
                     <p class="text-xs text-gray-600">
                         Locatário ({{ \App\Helper\FormatHelper::formatCpfCnpj($aluguel->cliente->cpf_cnpj) }})
@@ -261,7 +335,7 @@
 
                 <!-- Locador -->
                 <div>
-                    <div class="border-b-2 border-gray-400 h-16 w-3/4 mx-auto mb-2"></div>
+                    <div class="border-b-2 border-gray-400 h-6 w-3/4 mx-auto mb-2"></div>
                     <p class="font-bold text-gray-800">22.341.672 IVAN DE AQUINO SILVA - ME</p>
                     <p class="text-xs text-gray-600">Locador (22.341.672/0001-01)</p>
                     <!--<p class="text-xs text-gray-500 mt-1">Data: _____/_____/_________</p>-->

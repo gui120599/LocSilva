@@ -130,25 +130,57 @@ class AluguelsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('valor_diaria')
+                    ->label('Valor Diária')
+                    ->money('BRL')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('valor_diaria_adicionais')
+                    ->label('Diária Adicionais')
+                    ->money('BRL')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('valor_adicionais_aluguel')
+                    ->label('Adicionais')
+                    ->money('BRL')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('valor_acrescimo_aluguel')
+                    ->label('Acréscimos')
+                    ->money('BRL')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('valor_desconto_aluguel')
+                    ->label('Descontos')
                     ->money('BRL')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('valor_total_aluguel')
+                    ->label('Total do Aluguel')
                     ->money('BRL')
                     ->sortable(),
+
                 TextColumn::make('valor_pago_aluguel')
+                    ->label('Total Pago')
                     ->money('BRL')
                     ->sortable(),
+
                 TextColumn::make('valor_saldo_aluguel')
+                    ->label('Saldo Restante')
                     ->money('BRL')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('updated_at')
                     ->label('Atualizado em')
                     ->dateTime()
@@ -211,8 +243,8 @@ class AluguelsTable
                                 $query->whereDate('data_retirada', '<=', $date);
                             });
 
-                            // 🔹 FILTRO POR DATETIME (com hora)
-                           /* ->when($data['data_retirada_datetime_de'] ?? null, function ($query, $dateTime) {
+                        // 🔹 FILTRO POR DATETIME (com hora)
+                        /* ->when($data['data_retirada_datetime_de'] ?? null, function ($query, $dateTime) {
                                 $query->where('data_retirada', '>=', $dateTime);
                             })
                             ->when($data['data_retirada_datetime_ate'] ?? null, function ($query, $dateTime) {
@@ -236,7 +268,7 @@ class AluguelsTable
                             ->label('Devolução Real (Até)'),
 
                         // Com hora
-                       /* DateTimePicker::make('data_devolucao_real_datetime_de')
+                        /* DateTimePicker::make('data_devolucao_real_datetime_de')
                             ->label('Data/Hora de Devolução (De)'),
 
                         // Com hora
@@ -255,8 +287,8 @@ class AluguelsTable
                                 $query->where('data_devolucao_real', '<=', $date . ' 23:59:59');
                             });
 
-                            // 🔹 FILTRO POR DATETIME
-                           /* ->when($data['data_devolucao_real_datetime_de'] ?? null, function ($query, $dateTime) {
+                        // 🔹 FILTRO POR DATETIME
+                        /* ->when($data['data_devolucao_real_datetime_de'] ?? null, function ($query, $dateTime) {
                                 $query->where('data_devolucao_real', '>=', $dateTime);
                             })
                             ->when($data['data_devolucao_real_datetime_ate'] ?? null, function ($query, $dateTime) {
@@ -419,6 +451,8 @@ class AluguelsTable
                             'data_devolucao_real' => $record->data_devolucao_real,
                             'quantidade_diarias' => $record->quantidade_diarias,
                             'valor_diaria' => $record->valor_diaria,
+                            'valor_diaria_adicionais' => $record->valor_diaria_adicionais,
+                            'valor_adicionais_aluguel' => $record->valor_adicionais_aluguel,
                             'valor_acrescimo_aluguel' => $record->valor_acrescimo_aluguel,
                             'valor_desconto_aluguel' => $record->valor_desconto_aluguel,
                             'valor_total_aluguel' => $record->valor_total_aluguel,
@@ -455,6 +489,7 @@ class AluguelsTable
 
                                             $dataRetirada = $record->data_retirada;
                                             $valorDiaria = floatval($record->valor_diaria ?? 0);
+                                            $valorDiariaAdicionais = floatval($record->valor_diaria_adicionais ?? 0);
                                             $valorAcrescimo = self::normalizeMoney($get('valor_acrescimo_aluguel') ?? 0);
                                             $valorDesconto = self::normalizeMoney($get('valor_desconto_aluguel') ?? 0);
 
@@ -488,16 +523,22 @@ class AluguelsTable
                                                 // Set quantidade de diárias
                                                 $set('quantidade_diarias', $dias);
 
+                                                //Calcula valor da diária dos adicionais
+                                                $subtotalAdicionais = $valorDiariaAdicionais * $dias;
+
                                                 // Calcula valor total
                                                 $valorTotal = $valorDiaria * $dias;
 
+                                                $valorTotal += $subtotalAdicionais;
                                                 $valorTotal += $valorAcrescimo;
                                                 $valorTotal -= $valorDesconto;
 
                                                 // Formata no padrão brasileiro
+                                                $valorAdcionaisFormatado = number_format($subtotalAdicionais, 2, ',', '.');
                                                 $valorFormatado = number_format($valorTotal, 2, ',', '.');
 
                                                 // Atribui o valor formatado
+                                                $set('valor_adicionais_aluguel', $valorAdcionaisFormatado);
                                                 $set('valor_total_aluguel', $valorFormatado);
 
                                                 // Unificar os dois repeaters em um só array
@@ -553,6 +594,20 @@ class AluguelsTable
                                                         ->dehydrated()
                                                         ->afterStateUpdated(fn($set, $get) => self::calcularValores($set, $get))
                                                         ->helperText('Valor por dia de aluguel'),
+
+                                                    // Valor da Diária adicionais
+                                                    Money::make('valor_diaria_adicionais')
+                                                        ->label('Diária dos Adicionais')
+                                                        ->readOnly()
+                                                        ->required()
+                                                        ->helperText('Valor por dia de aluguel'),
+
+                                                    // Valor dos Adicionais (total geral)
+                                                    Money::make('valor_adicionais_aluguel')
+                                                        ->label('Total dos Adicionais')
+                                                        ->required()
+                                                        ->readOnly()
+                                                        ->helperText('Total dos Adicionais'),
 
                                                     // Acréscimos
                                                     Money::make('valor_acrescimo_aluguel')
@@ -1092,6 +1147,23 @@ class AluguelsTable
         return floatval($value);
     }
 
+    /**
+     * Calcula valor total de Adicionais (retorna float)
+     */
+    protected static function ValorTotalAdicionais(?array $adicionais): float
+    {
+        $totalAdicionais = 0;
+
+        if (is_array($adicionais) && !empty($adicionais)) {
+            foreach ($adicionais as $adicional) {
+                if (isset($adicional['valor_total_adicional_aluguel'])) {
+                    $totalAdicionais += self::normalizeMoney($adicional['valor_total_adicional_aluguel']);
+                }
+            }
+        }
+        return $totalAdicionais;
+    }
+
 
     /**
      * Calulura totais
@@ -1163,15 +1235,19 @@ class AluguelsTable
     protected static function calcularValores(Set $set, Get $get): void
     {
         $valorDiaria       = self::normalizeMoney($get('valor_diaria'));
+        $valorDiariaAdcionais = self::normalizeMoney($get('valor_diaria_adicionais'));
         $quantidadeDiarias = intval($get('quantidade_diarias') ?? 1);
         $valorAcrescimo    = self::normalizeMoney($get('valor_acrescimo_aluguel'));
         $valorDesconto     = self::normalizeMoney($get('valor_desconto_aluguel'));
+
+        //Calcular totaisAdicionais
+        $subtotalAdicionais = $valorDiariaAdcionais * $quantidadeDiarias;
 
         // Calcular subtotal
         $subtotal = $valorDiaria * $quantidadeDiarias;
 
         // Calcular total
-        $valorTotal = $subtotal + $valorAcrescimo - $valorDesconto;
+        $valorTotal = $subtotal + $subtotalAdicionais + $valorAcrescimo - $valorDesconto;
 
         $set('valor_total_aluguel', number_format($valorTotal, 2, ',', '.'));
 

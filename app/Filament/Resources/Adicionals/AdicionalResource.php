@@ -15,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use UnitEnum;
 
 class AdicionalResource extends Resource
 {
@@ -23,6 +24,8 @@ class AdicionalResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquaresPlus;
 
     protected static ?string $pluralModelLabel = 'Adicionais';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Cadastros';
     
     protected static ?string $recordTitleAttribute = 'descricao';
 

@@ -15,7 +15,6 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
-
     @endif
 </head>
 
@@ -74,7 +73,8 @@
                 </h3>
                 <div class="space-y-1 text-sm text-gray-600">
                     <p><strong class="text-[9px]">Identificação: </strong> {{ $aluguel->carreta->identificacao }}</p>
-                    <p><strong class="text-[9px]">Placa: </strong><span class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">{{ $aluguel->carreta->placa }}</span>
+                    <p><strong class="text-[9px]">Placa: </strong><span
+                            class="font-mono text-base bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">{{ $aluguel->carreta->placa }}</span>
                     </p>
                     <p><strong class="text-[9px]">Valor Diária: </strong> <span class="font-semibold text-green-600">R$
                             {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</span></p>
@@ -132,8 +132,8 @@
                         <dt>Data Real:</dt>
                         <dd>
                             {{ $aluguel->data_devolucao_real
-    ? \Carbon\Carbon::parse($aluguel->data_devolucao_real)->format('d/m/Y H:i')
-    : 'Ainda não devolvido' }}
+                                ? \Carbon\Carbon::parse($aluguel->data_devolucao_real)->format('d/m/Y H:i')
+                                : 'Ainda não devolvido' }}
                         </dd>
                     </div>
 
@@ -153,6 +153,41 @@
 
         <!-- Seção de Valores e movimentos -->
         <div class="grid grid-cols-1 gap-2 mb-2">
+            <!-- Adicionais -->
+            @if ($aluguel->adicionaisAlugueis->isNotEmpty())
+                <div class="p-2 border border-gray-200 bg-primary-50/30 rounded-xl">
+                    <h5 class="font-bold text-gray-800 mb-2 flex items-center">
+                        <x-heroicon-s-squares-plus class="w-6 h-6 mr-2 text-primary-600" /> Adicionais
+                    </h5>
+                    <dl class="space-y-2 text-sm">
+                        <div class="pt-2 border-t border-gray-200">
+                            <div class="pl-3 space-y-1">
+                                @foreach ($aluguel->adicionaisAlugueis as $adicionalAluguel)
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-gray-600 text-[10px]">
+                                            {{ $adicionalAluguel->adicional->descricao_adicional ?? 'Adicional' }}
+                                            ({{ number_format($adicionalAluguel->quantidade_adicional_aluguel, 0) }}x)
+                                        </span>
+                                        <span class="text-gray-700 text-[10px]">
+                                            R$
+                                            {{ number_format($adicionalAluguel->valor_total_adicional_aluguel, 2, ',', '.') }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="flex justify-between mt-1 font-semibold">
+                                <span class="text-gray-700 text-[10px]">Total Adicionais:</span>
+                                <span class="text-gray-800 text-[10px]">
+                                    R$
+                                    {{ number_format($aluguel->adicionaisAlugueis->sum('valor_total_adicional_aluguel') ?? 0, 2, ',', '.') }}
+                                </span>
+
+                            </div>
+                        </div>
+
+                    </dl>
+                </div>
+            @endif
 
             <!-- Resumo Financeiro -->
             <div class="p-2 border border-gray-200 bg-primary-50/30 rounded-xl">
@@ -160,19 +195,25 @@
                     <x-heroicon-s-currency-dollar class="w-6 h-6 mr-2 text-primary-600" /> Resumo Financeiro
                 </h5>
                 <dl class="space-y-2 text-sm">
-                    <div class="flex justify-between font-medium text-gray-700">
-                        <dt>Valor da Diária:</dt>
+                    <div class="flex justify-between font-medium text-gray-700 text-[10px]">
+                        <dt>Valor Diária Carreta/Reboque:</dt>
                         <dd>R$ {{ number_format($aluguel->carreta->valor_diaria, 2, ',', '.') }}</dd>
                     </div>
-                    <div class="flex justify-between font-medium text-gray-700">
+                    @if ($aluguel->adicionaisAlugueis->isNotEmpty())
+                        <div class="flex justify-between font-medium text-gray-700 text-[10px]">
+                            <dt>Valor Diária Adicionais:</dt>
+                            <dd>R$ {{ number_format($aluguel->valor_adicionais_aluguel ?? 0.0, 2, ',', '.') }}</dd>
+                        </div>
+                    @endif
+                    <div class="flex justify-between font-medium text-gray-700 text-[10px]">
                         <dt>Qtd de Diárias:</dt>
                         <dd>{{ $aluguel->quantidade_diarias }} dias</dd>
                     </div>
-                    <div class="flex justify-between text-gray-700">
+                    <div class="flex justify-between text-gray-700 text-[10px]">
                         <dt>(+)Acréscimo:</dt>
                         <dd>R$ {{ number_format($aluguel->valor_acrescimo_aluguel ?? 0.0, 2, ',', '.') }}</dd>
                     </div>
-                    <div class="flex justify-between text-gray-700">
+                    <div class="flex justify-between text-gray-700 text-[10px]">
                         <dt>(-)Desconto:</dt>
                         <dd>R$ {{ number_format($aluguel->valor_desconto_aluguel ?? 0.0, 2, ',', '.') }}</dd>
                     </div>

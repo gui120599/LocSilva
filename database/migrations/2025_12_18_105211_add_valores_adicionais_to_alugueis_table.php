@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('alugueis', function (Blueprint $table) {
-            $table->decimal('valor_adicionais_aluguel', 10, 2)->default(0)->after('valor_diaria');
+            $table->decimal('valor_diaria_adicionais', 10, 2)->default(0)->after('valor_diaria');
+            $table->decimal('valor_adicionais_aluguel', 10, 2)->default(0)->after('valor_diaria_adicionais');
         });
     }
 
@@ -22,6 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('alugueis', function (Blueprint $table) {
+            $table->dropColumn('valor_diaria_adicionais');
             $table->dropColumn('valor_adicionais_aluguel');
         });
     }
