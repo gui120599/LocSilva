@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Aluguels\Schemas;
 use App\Filament\Tables\CarretasTable;
 use App\Models\Adicional;
 use App\Models\Carreta;
+use App\Models\Cliente;
 use App\Models\MetodoPagamento;
 use App\Services\IBGEServices;
 use Carbon\Carbon;
@@ -27,12 +28,11 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
-use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Support\Enums\TextSize;
 use Illuminate\Database\Eloquent\Builder;
+use Leandrocfe\FilamentPtbrFormFields\Document;
 use Leandrocfe\FilamentPtbrFormFields\Money;
-use Stevebauman\Purify\Facades\Purify;
 
 class AluguelForm
 {
@@ -69,34 +69,16 @@ class AluguelForm
                                                                 ->autocomplete(false)
                                                                 ->columnSpan(3)
                                                                 ->required(),
-                                                            TextInput::make('cpf_cnpj')
+                                                            Document::make('cpf_cnpj')
+                                                                ->dynamic()
                                                                 ->required()
                                                                 ->label('CPF/CNPJ')
                                                                 ->autocomplete(false)
-                                                                ->dehydrateStateUsing(fn(string $state) => preg_replace("/\D/", "", $state))
-                                                                ->mask(RawJs::make(
-                                                                    <<<'JS'
-                                                                    $input.length > 14 ? '99.999.999/9999-99' : '999.999.999-99'
-                                                                    JS
-                                                                ))
-                                                                ->disabled(fn(string $operation): bool => $operation === 'edit')
-                                                                ->rules([ //Não funciona o unique() pq ele verifica com a mask e na hora que salva no banco ele salva sem a mask
-                                                                    'required',
-                                                                    'cpf_ou_cnpj',
-                                                                    fn($get, $record) => function ($attribute, $value, $fail) use ($record) {
-                                                                        // Remove formatação
-                                                                        $cpfCnpj = preg_replace("/\D/", "", $value);
-
-                                                                        // Verifica se já existe
-                                                                        $exists = \App\Models\Cliente::where('cpf_cnpj', $cpfCnpj)
-                                                                            ->when($record, fn($query) => $query->where('id', '!=', $record->id))
-                                                                            ->exists();
-
-                                                                        if ($exists) {
-                                                                            $fail('Este CPF/CNPJ já está cadastrado.');
-                                                                        }
-                                                                    },
+                                                                ->unique(table: Cliente::class, column: 'cpf_cnpj', ignoreRecord: true)
+                                                                ->validationMessages([
+                                                                    'unique' => 'Este CPF/CNPJ já está em uso.',
                                                                 ])
+                                                                ->disabled(fn(string $operation) => $operation === 'edit')
                                                                 ->columnSpan(2),
                                                             DatePicker::make('data_nascimento'),
                                                         ])
@@ -172,7 +154,7 @@ class AluguelForm
                                                             }
                                                         }),
                                                     TextInput::make('endereco')
-                                                        ->columnSpan(3)
+                                                        ->columnSpan(2)
                                                         ->label('Logradouro'),
                                                     TextInput::make('complemento_endereco')
                                                         ->columnSpan(3)
@@ -184,7 +166,7 @@ class AluguelForm
                                                         ->preload(false)
                                                         ->options(IBGEServices::ufs())
                                                         ->searchable()
-                                                        ->columnSpan(3),
+                                                        ->columnSpan(2),
                                                     Select::make('cidade')
                                                         ->label('Cidade')
                                                         ->preload()
@@ -199,7 +181,7 @@ class AluguelForm
                                                             // Chama o novo método no seu serviço para buscar as cidades da UF
                                                             return IBGEServices::cidadesPorUf($uf);
                                                         })
-                                                        ->columnSpan(3),
+                                                        ->columnSpan(2),
                                                 ]),
                                             Section::make()
                                                 ->description('Observações do cliente')

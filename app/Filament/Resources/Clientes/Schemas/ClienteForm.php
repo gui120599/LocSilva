@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Clientes\Schemas;
 
+use App\Models\Cliente;
 use App\Services\IBGEServices;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -12,6 +13,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
+use Leandrocfe\FilamentPtbrFormFields\Document;
+use PhpParser\Comment\Doc;
 
 class ClienteForm
 {
@@ -32,34 +35,18 @@ class ClienteForm
                                     ->autocomplete(false)
                                     ->columnSpan(3)
                                     ->required(),
-                                TextInput::make('cpf_cnpj')
+                                Document::make('cpf_cnpj')
+                                    ->dynamic()
                                     ->required()
                                     ->label('CPF/CNPJ')
                                     ->autocomplete(false)
-                                    ->dehydrateStateUsing(fn(string $state) => preg_replace("/\D/", "", $state))
-                                    ->mask(RawJs::make(<<<'JS'
-                                        $input.length > 14 ? '99.999.999/9999-99' : '999.999.999-99'
-                                        JS
-                                    ))
-                                    ->disabled(fn(string $operation): bool => $operation === 'edit')
-                                    ->rules([ //Não funciona o unique() pq ele verifica com a mask e na hora que salva no banco ele salva sem a mask
-                                        'required',
-                                        'cpf_ou_cnpj',
-                                        fn($get, $record) => function ($attribute, $value, $fail) use ($record) {
-                                            // Remove formatação
-                                            $cpfCnpj = preg_replace("/\D/", "", $value);
-
-                                            // Verifica se já existe
-                                            $exists = \App\Models\Cliente::where('cpf_cnpj', $cpfCnpj)
-                                                ->when($record, fn($query) => $query->where('id', '!=', $record->id))
-                                                ->exists();
-
-                                            if ($exists) {
-                                                $fail('Este CPF/CNPJ já está cadastrado.');
-                                            }
-                                        },
+                                    ->unique(table: Cliente::class, column: 'cpf_cnpj', ignoreRecord: true)
+                                    ->validationMessages([
+                                        'unique' => 'Este CPF/CNPJ já está em uso.',
                                     ])
+                                    ->disabled(fn(string $operation) => $operation === 'edit')
                                     ->columnSpan(2),
+
                                 DatePicker::make('data_nascimento'),
                             ])
                             ->columns(3),
@@ -131,7 +118,6 @@ class ClienteForm
                                         $set('cidade', '');
                                         // Opcional: Adicionar uma notificação de erro
                                     }
-
                                 }
                             }),
                         TextInput::make('endereco')
