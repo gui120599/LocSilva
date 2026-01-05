@@ -27,7 +27,7 @@ class AdicionalResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Cadastros';
     
-    protected static ?string $recordTitleAttribute = 'descricao';
+    protected static ?string $recordTitleAttribute = 'descricao_adicional';
 
     public static function form(Schema $schema): Schema
     {
