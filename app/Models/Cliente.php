@@ -27,7 +27,17 @@ class Cliente extends Model
         'observacoes',
     ];
 
+    /**
+     * Arquivos do cliente
+     */
+    public function arquivos(): HasMany
+    {
+        return $this->hasMany(ArquivoCliente::class, 'cliente_id');
+    }
 
+    /** 
+     * Aluguéis do cliente
+     */
     public function alugueis(): HasMany
     {
         return $this->hasMany(Aluguel::class, 'cliente_id');

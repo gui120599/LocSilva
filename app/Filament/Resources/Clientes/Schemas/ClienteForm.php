@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Clientes\Schemas;
 
 use App\Models\Cliente;
+use App\Models\TipoDocumento;
 use App\Services\IBGEServices;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -13,6 +15,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\RawJs;
+use Illuminate\Database\Eloquent\Model;
 use Leandrocfe\FilamentPtbrFormFields\Document;
 use PhpParser\Comment\Doc;
 
@@ -54,6 +57,10 @@ class ClienteForm
                             ->columnSpan(1)
                             ->schema([
                                 FileUpload::make('foto')
+                                    ->avatar()
+                                    ->disk('public')
+                                    ->directory('fotos_clientes')
+                                    ->label('Foto do Cliente'),
                             ]),
                     ]),
                 Section::make()
@@ -70,25 +77,48 @@ class ClienteForm
                             ->email(),
                     ]),
                 Section::make()
-                    ->description('Documentos do CLiente')
+                    ->description('Documentos do Cliente')
                     ->icon('heroicon-s-paper-clip')
                     ->columns(2)
                     ->schema([
-                        FileUpload::make('documento')
-                            ->disk('public')
-                            ->directory('documentos_clientes')
-                            ->maxSize(2048)
-                            ->hint('Tamanho máximo: 2MB')
-                            ->downloadable()
-                            ->openable(),
-                        FileUpload::make('nota_promissoria')
-                            ->label('Nota Promssória')
-                            ->disk('public')
-                            ->directory('promissorias_clientes')
-                            ->maxSize(2048)
-                            ->hint('Tamanho máximo: 2MB')
-                            ->downloadable()
-                            ->openable(),
+                        Repeater::make('arquivos')
+                            ->collapsible()
+                            ->columnSpanFull()
+                            ->relationship()
+                            ->columns(4)
+                            ->itemLabel(function (array $state): ?string {
+                                if (!isset($state['tipo_documento_id'])) {
+                                    return 'Novo Documento';
+                                }
+
+                                $TipoDocumento = TipoDocumento::find($state['tipo_documento_id']);
+
+                                return $TipoDocumento
+                                    ? $TipoDocumento->nome
+                                    : 'Documento';
+                            })
+                            ->schema([
+                                Select::make('tipo_documento_id')
+                                    ->disabled(fn(?Model $record): bool => $record !== null)
+                                    ->dehydrated()
+                                    ->reactive()
+                                    ->options(TipoDocumento::query()->pluck('nome', 'id')),
+                                DatePicker::make('data_validade_documento')
+                                    ->label('Validade')
+                                    ->disabled(fn(?Model $record): bool => $record !== null)
+                                    ->dehydrated(),
+                                FileUpload::make('url_documento')
+                                    ->label('Arquivo')
+                                    ->directory('arquivos_clientes')
+                                    ->disk('public')
+                                    ->downloadable()
+                                    ->openable()
+                                    ->maxSize(2048)
+                                    ->hint('Máx. 2MB'),
+                                Textarea::make('observacoes_documento')
+                                    ->label('Observações')
+                                    ->rows(3),
+                            ]),
                     ]),
                 Section::make()
                     ->description('Endereço do cliente')
