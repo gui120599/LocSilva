@@ -418,7 +418,7 @@ class AluguelsTable
                     ->visible(fn($record) => in_array($record->status, ['ativo', 'pendente'])),
                 
                 Action::make('print')
-                    ->label('Cehcklist')
+                    ->label('Checklist')
                     ->icon('heroicon-s-printer')
                     ->color('primary')
                     // A CHAVE: Passar o registro ($record) para a rota dentro do closure
