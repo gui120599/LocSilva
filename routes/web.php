@@ -12,6 +12,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/print-caixa/{id}', [CaixaController::class, 'printCaixa'])->name('print-caixa');
 
     Route::get('/print-retirada/{id}', [AluguelController::class, 'printRetirada'])->name('print-retirada');
+    
+    Route::get('/print-checklist/{id}', [AluguelController::class, 'printChecklist'])->name('print-checklist');
 
     Route::get('/print-devolucao/{id}', [AluguelController::class, 'printDevolucao'])->name('print-devolucao');
 

@@ -39,6 +39,18 @@ class AluguelController extends Controller
     }
 
     /**
+     * @return view
+     * @param $id
+     * Imprime o checklist
+     */
+    public function printChecklist($id): View
+    {
+        $aluguel = Aluguel::find($id);
+        
+        return view('checklist',['aluguel' => $aluguel]);
+    }
+
+    /**
      * Imprime o recibo de devolução
      */
     public function printDevolucao($id): View

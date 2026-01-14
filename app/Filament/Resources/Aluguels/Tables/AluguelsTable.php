@@ -416,6 +416,15 @@ class AluguelsTable
                     ->url(fn($record): string => route('print-retirada', ['id' => $record->id]))
                     ->openUrlInNewTab()
                     ->visible(fn($record) => in_array($record->status, ['ativo', 'pendente'])),
+                
+                Action::make('print')
+                    ->label('Cehcklist')
+                    ->icon('heroicon-s-printer')
+                    ->color('primary')
+                    // A CHAVE: Passar o registro ($record) para a rota dentro do closure
+                    ->url(fn($record): string => route('print-checklist', ['id' => $record->id]))
+                    ->openUrlInNewTab()
+                    ->visible(fn($record) => in_array($record->status, ['ativo', 'pendente'])),
 
                 /*Action::make('print')
                     ->label('devolucao')
