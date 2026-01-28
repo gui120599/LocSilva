@@ -49,6 +49,7 @@ class ClienteForm
                                 ->unique(table: Cliente::class, column: 'cpf_cnpj', ignoreRecord: true)
                                 ->validationMessages([
                                     'unique' => 'Este CPF/CNPJ já está em uso.',
+                                    'required' => 'O campo CPF/CNPJ é obrigatório.',
                                 ])
                                 ->disabled(fn(string $operation) => $operation === 'edit')
                                 ->columnSpan(2),
@@ -75,6 +76,10 @@ class ClienteForm
                         ->dehydrateStateUsing(fn(string $state) => preg_replace("/\D/", "", $state))
                         ->mask('(99)9 9999-9999')
                         ->tel()
+                        ->validationMessages([
+                            'tel' => 'O número de telefone informado não é válido.',
+                            'required' => 'O campo telefone é obrigatório.',
+                        ])
                         ->required(),
                     TextInput::make('email')
                         ->email(),
@@ -89,6 +94,7 @@ class ClienteForm
                         ->columnSpanFull()
                         ->relationship()
                         ->columns(4)
+                        ->defaultItems(0)
                         ->itemLabel(function (array $state): ?string {
                             if (!isset($state['tipo_documento_id'])) {
                                 return 'Novo Documento';
@@ -100,11 +106,30 @@ class ClienteForm
                                 ? $TipoDocumento->nome
                                 : 'Documento';
                         })
+                        ->mutateRelationshipDataBeforeCreateUsing(function (array $data): ?array {
+                            // Se não tiver tipo_documento_id OU url_documento, NÃO cria o registro
+                            if (empty($data['tipo_documento_id']) || empty($data['url_documento'])) {
+                                return null; // Retorna NULL para cancelar a criação
+                            }
+                            return $data;
+                        })
+                        ->mutateRelationshipDataBeforeSaveUsing(function (array $data): ?array {
+                            // Se não tiver tipo_documento_id OU url_documento, NÃO salva
+                            if (empty($data['tipo_documento_id']) || empty($data['url_documento'])) {
+                                return null;
+                            }
+                            return $data;
+                        })
                         ->schema([
                             Select::make('tipo_documento_id')
+                                ->label('Tipo de Documento')
+                                ->required() // Adicione required para forçar o preenchimento
                                 ->disabled(fn(?Model $record): bool => $record !== null)
                                 ->dehydrated()
                                 ->reactive()
+                                ->validationMessages([
+                                    'required' => 'O campo Tipo de Documento é obrigatório.',
+                                ])
                                 ->options(TipoDocumento::query()->pluck('nome', 'id')),
                             DatePicker::make('data_validade_documento')
                                 ->label('Validade')
@@ -112,10 +137,14 @@ class ClienteForm
                                 ->dehydrated(),
                             FileUpload::make('url_documento')
                                 ->label('Arquivo')
+                                ->required() // Adicione required aqui também
                                 ->directory('arquivos_clientes')
                                 ->disk('public')
                                 ->downloadable()
                                 ->openable()
+                                ->validationMessages([
+                                    'required' => 'O campo Arquivo é obrigatório.',
+                                ])
                                 ->maxSize(2048)
                                 ->hint('Máx. 2MB'),
                             Textarea::make('observacoes_documento')
